@@ -117,4 +117,4 @@ _Partner explores silently for 3 minutes with no verbal setup. Record only what 
 - [x] Open the URL in a private/incognito window to confirm it loads for someone who isn't signed in.
 - [x] Record the real URL and verification above.
 - [ ] Run Show & Swap with a partner and record only their actual feedback.
-- [ ] Save these documentation updates to the GitHub repository.
+- [x] Save these documentation updates to the GitHub repository.
