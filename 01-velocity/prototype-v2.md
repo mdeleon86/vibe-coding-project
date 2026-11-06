@@ -2,7 +2,7 @@
 
 **Scenario:** 04, The Dashboard Nobody Reads
 **Launch path:** A, Copy & Customize
-**Builder:** Claude Code (local); plain HTML/CSS and inline SVG in `01-velocity/v2/`
+**Builder:** Claude Code (local); standalone HTML with embedded CSS and inline SVG in `01-velocity/signal-prototype-v2.html`
 **Data:** synthetic, hand-written. No real customer or company data.
 **Builds on:** Prototype V1 (`prototype-v1.md`)
 
@@ -91,7 +91,7 @@ All checks used a local preview in Claude Code's built-in browser.
   - Chart text is readable and the action plan stacks into one column.
   - Metric cards show in 2 columns, with badges wrapping below the values.
 - **Console:** no errors.
-- **V2 copy:** `v2/index.html` and `v2/styles.css` are copies of the tested files. The only changes are the V2 label in the page title and footer. The page loads its stylesheet with `href="styles.css"`, so both files must stay in the same folder.
+- **Published V2:** `01-velocity/signal-prototype-v2.html` is a standalone HTML file with embedded CSS and inline SVG. No separate stylesheet is required.
 
 ## Known limitations
 - All data is synthetic and hand-written, and the thresholds are illustrative. Synthetic prototype data is not real usage evidence.
@@ -101,8 +101,9 @@ All checks used a local preview in Claude Code's built-in browser.
 - No one other than the builder has used V2 yet, so it is unknown whether it helps people decide faster or better.
 
 ## Live URL
-- **Published URL:** _TBD: not published yet_
-- **Verified in a private/incognito window:** ☐ not yet
+- **Published URL:** https://mdeleon86.github.io/vibe-coding-project/01-velocity/signal-prototype-v2.html
+- **Hosting:** GitHub Pages
+- **Verified in a private/incognito window:** ☑ yes
 
 ## Show & Swap
 _Partner explores silently for 3 minutes with no verbal setup. Record only what actually happened._
@@ -112,8 +113,8 @@ _Partner explores silently for 3 minutes with no verbal setup. Record only what 
 - **What assumption they thought was being tested:** _TBD_
 
 ## Remaining Lab 1 activities
-- [ ] Publish V2 to a shareable URL (Netlify Drop: drag the `v2` folder).
-- [ ] Open the URL in a private/incognito window to confirm it loads for someone who isn't signed in.
-- [ ] Record the real URL and verification above.
+- [x] Publish V2 to a shareable URL using GitHub Pages.
+- [x] Open the URL in a private/incognito window to confirm it loads for someone who isn't signed in.
+- [x] Record the real URL and verification above.
 - [ ] Run Show & Swap with a partner and record only their actual feedback.
-- [ ] Save these files to the GitHub repository.
+- [ ] Save these documentation updates to the GitHub repository.
