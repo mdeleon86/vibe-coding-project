@@ -1,0 +1,813 @@
+<!doctype html>
+<!-- Signal V3: hypothesis-test prototype. Self-contained (HTML + embedded CSS and JavaScript). Synthetic dashboard data only. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signal V3 · Hypothesis test</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --surface: #ffffff;
+      --surface-2: #f9fafb;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #4338ca;
+      --accent-soft: #eef0ff;
+      --good: #15803d;
+      --good-soft: #dcfce7;
+      --caution: #b45309;
+      --caution-soft: #fef3c7;
+      --bad: #b91c1c;
+      --bad-soft: #fee2e2;
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    h1, h2, h3 { margin: 0; line-height: 1.25; }
+    h1:focus, h2:focus { outline: none; }
+    button { font: inherit; }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+    .logo { width: 14px; height: 14px; border-radius: 4px; background: var(--accent); }
+    .topbar-right { color: var(--muted); font-size: 14px; }
+    .synthetic { display: inline-block; padding: 0 6px; border: 1px dashed #9ca3af; border-radius: 4px; font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+
+    main { max-width: 960px; margin: 0 auto; padding: 28px 16px 120px; }
+    .screen { display: grid; gap: 20px; }
+
+    .label { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+    .card > * + * { margin-top: 12px; }
+    .muted { color: var(--muted); }
+    .small { font-size: 14px; }
+    .source { font-size: 12px; color: var(--muted); }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+    .btn.secondary { background: var(--surface); color: var(--accent); }
+    .btn.quiet { background: var(--surface); color: var(--muted); border-color: var(--border); }
+    .btn.danger { background: var(--surface); color: var(--bad); border-color: #fca5a5; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:focus-visible, .chart-card:focus-visible, .option input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+    /* Health badges */
+    .health { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; line-height: 1.6; white-space: nowrap; }
+    .health .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .health.good { color: var(--good); background: var(--good-soft); }
+    .health.caution { color: var(--caution); background: var(--caution-soft); }
+    .health.bad { color: var(--bad); background: var(--bad-soft); }
+
+    /* Brief */
+    .hypothesis { font-size: 19px; line-height: 1.5; max-width: 70ch; }
+    .criteria { margin: 0; padding-left: 20px; }
+    .criteria li + li { margin-top: 6px; }
+    .kill { border-left: 4px solid var(--bad); background: var(--bad-soft); border-radius: 8px; padding: 12px 16px; }
+    .kill p { margin: 4px 0 0; }
+    .problem-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .stat-value { margin: 0; font-size: 34px; font-weight: 700; line-height: 1.1; }
+    .stat-label { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+    .quotes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    blockquote { margin: 0; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    blockquote p { margin: 0; font-size: 17px; line-height: 1.45; }
+    blockquote footer { margin-top: 8px; font-size: 14px; color: var(--muted); }
+    .steps { margin: 0; padding-left: 20px; }
+    .steps li + li { margin-top: 4px; }
+
+    /* Start */
+    .facilitator { background: var(--surface-2); border: 1px dashed #9ca3af; border-radius: 12px; padding: 14px 16px; font-size: 14px; }
+    .facilitator select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); margin-left: 6px; }
+    .task { font-size: 20px; font-weight: 600; line-height: 1.4; max-width: 60ch; }
+
+    /* Test bar shown during a session */
+    .testbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--surface); border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(17, 24, 39, 0.06); padding: 12px 16px; }
+    .testbar-inner { max-width: 960px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+    .testbar-task { font-size: 14px; color: var(--muted); }
+
+    /* Version A: 12-chart view */
+    .dash-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; }
+    .dash-head h1 { font-size: 22px; }
+    .chart-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .chart-card { display: block; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; color: inherit; }
+    .chart-card:hover { border-color: #c7d2fe; }
+    .chart-name { display: block; font-size: 13px; color: var(--muted); }
+    .chart-value { display: block; font-size: 20px; font-weight: 700; margin-top: 2px; }
+    .chart-change { display: block; font-size: 12px; color: var(--muted); }
+    .chart-card svg { display: block; width: 100%; height: 40px; margin-top: 8px; overflow: visible; }
+    .chart-card polyline { fill: none; stroke: #6b7280; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+
+    dialog { width: min(560px, calc(100vw - 32px)); border: 1px solid var(--border); border-radius: 16px; padding: 24px; color: var(--text); }
+    dialog::backdrop { background: rgba(17, 24, 39, 0.35); }
+    .dialog-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .detail-chart { display: block; width: 100%; height: auto; margin-top: 12px; }
+    .detail-chart text { font-family: inherit; font-size: 11px; fill: var(--muted); }
+    .detail-chart .grid line { stroke: var(--border); }
+    .detail-chart polyline { fill: none; stroke: #374151; stroke-width: 2; stroke-linejoin: round; }
+    .detail-chart circle { fill: #374151; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; }
+    tbody th { font-size: 14px; text-transform: none; letter-spacing: 0; color: var(--text); font-weight: 500; }
+
+    /* Version B: insight-first view (Signal V2 pattern) */
+    .insight { background: var(--surface); border: 1px solid var(--border); border-top: 5px solid var(--bad); border-radius: 16px; padding: 28px; display: grid; gap: 20px; }
+    .metric-name { margin: 0; font-size: 18px; font-weight: 600; }
+    .value-row { display: flex; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
+    .value { margin: 0; font-size: 72px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; }
+    .change { margin: 0; font-size: 22px; font-weight: 700; color: var(--bad); }
+    .vs { font-size: 15px; font-weight: 400; color: var(--muted); }
+    .value-row .health { align-self: center; }
+    .takeaway { margin: 12px 0 0; font-size: 19px; line-height: 1.45; max-width: 52ch; }
+    .trend-title { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: var(--muted); }
+    .trend-chart { display: block; width: 100%; max-width: 480px; height: auto; overflow: visible; }
+    .trend-chart text { font-family: inherit; font-size: 11px; fill: var(--muted); }
+    .trend-chart .zone-good { fill: var(--good-soft); opacity: 0.6; }
+    .trend-chart .zone-caution { fill: var(--caution-soft); opacity: 0.8; }
+    .trend-chart .zone-bad { fill: var(--bad-soft); opacity: 0.6; }
+    .trend-chart .zone-labels text { font-size: 10.5px; font-weight: 600; }
+    .trend-chart .zone-labels .good { fill: var(--good); }
+    .trend-chart .zone-labels .caution { fill: var(--caution); }
+    .trend-chart .zone-labels .bad { fill: var(--bad); }
+    .trend-chart .grid line { stroke: #ffffff; stroke-opacity: 0.7; }
+    .trend-chart .benchmark { stroke: #6b7280; stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .trend-chart .benchmark-label { font-weight: 600; }
+    .trend-chart .trend-line { fill: none; stroke: #374151; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .trend-chart .points circle { fill: #374151; stroke: var(--surface); stroke-width: 2; }
+    .trend-chart .points .now { fill: var(--bad); }
+    .trend-chart .now-label { font-size: 12px; font-weight: 700; fill: var(--text); }
+    .action { background: var(--accent-soft); border: 1px solid #c7d2fe; border-radius: 12px; padding: 18px 20px; }
+    .action .label { color: var(--accent); }
+    .action-text { margin: 6px 0 0; font-size: 20px; font-weight: 700; line-height: 1.35; }
+    .plan { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 14px 0 0; font-size: 15px; }
+    .plan dt { font-weight: 700; color: var(--accent); }
+    .plan dd { margin: 0; }
+    .caveat { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #c7d2fe; font-size: 13px; color: var(--muted); font-style: italic; }
+    .supporting { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+    .supporting-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+    .supporting-title { font-size: 17px; font-weight: 700; }
+    .supporting-sub { margin: 0; font-size: 14px; color: var(--muted); }
+    .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+    .tile { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+    .tile p { margin: 0; }
+    .tile-name { font-size: 14px; color: var(--muted); }
+    .tile-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
+    .tile-head .health { font-size: 12px; padding: 1px 8px; }
+    .tile-value { font-size: 22px; font-weight: 700; }
+    .tile-change { font-size: 13px; color: var(--muted); }
+    .spark { display: block; width: 100%; height: 28px; margin-top: 10px; overflow: visible; }
+    .spark polyline { fill: none; stroke: #9ca3af; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+    .spark .spark-threshold { stroke: var(--caution); stroke-width: 1.25; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+
+    /* Answer check */
+    fieldset { margin: 0; padding: 0; border: 0; }
+    legend { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .option { display: block; margin-top: 8px; cursor: pointer; }
+    .option input { position: absolute; opacity: 0; }
+    .option span { display: block; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+    .option input:checked + span { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+    /* Results */
+    .result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .verdict { border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border); background: var(--surface-2); }
+    .verdict p { margin: 4px 0 0; font-size: 14px; }
+    .verdict.pass { border-color: #86efac; background: var(--good-soft); }
+    .verdict.fail { border-color: #fca5a5; background: var(--bad-soft); }
+    .notice { border: 1px dashed #9ca3af; border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--muted); background: var(--surface-2); }
+    .table-wrap { overflow-x: auto; }
+
+    @media (max-width: 760px) {
+      .chart-grid, .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .problem-stats { grid-template-columns: 1fr; }
+      .quotes, .result-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      main { padding-top: 20px; }
+      .card, .insight { padding: 20px; }
+      .supporting { padding: 16px; }
+      .value { font-size: 56px; }
+      .plan { grid-template-columns: 1fr; gap: 0; }
+      .plan dd { margin-bottom: 8px; }
+      .testbar-inner .btn { flex: 1 1 auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand"><span class="logo" aria-hidden="true"></span>Signal</span>
+    <span class="topbar-right" id="topbar-right"></span>
+  </header>
+
+  <main>
+    <!-- 1. Test brief (facilitator and stakeholders) -->
+    <section class="screen" id="screen-brief" aria-labelledby="brief-title">
+      <div class="card">
+        <p class="label">Signal V3 · Hypothesis test</p>
+        <h1 id="brief-title" tabindex="-1">Does an insight-first landing view beat the 12-chart dashboard?</h1>
+        <p class="hypothesis"><strong>We believe</strong> replacing the 12-chart landing view with a dashboard highlighting the most important metric, a plain-language explanation, and a recommended action <strong>will cause</strong> users to identify actionable insights faster and be less likely to abandon the dashboard, <strong>for</strong> B2B SaaS product managers and growth leads who use the dashboard to make decisions.</p>
+        <div>
+          <p class="label">We'll know we're right when</p>
+          <ol class="criteria">
+            <li>The dashboard bounce rate drops from 60% to <strong>below 40%</strong>.</li>
+            <li>At least <strong>70% of test users</strong> identify the key insight and recommended action <strong>within 30 seconds</strong>.</li>
+          </ol>
+        </div>
+        <div class="kill">
+          <p class="label">Kill switch</p>
+          <p>If the dashboard bounce rate remains at or above 60% after introducing a guided headline and recommended action, investigate whether we're highlighting the wrong metric and pivot if necessary.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>The problem today</h2>
+        <div class="problem-stats">
+          <div class="stat"><p class="stat-value">60%</p><p class="stat-label">Bounce rate: sessions under 15s with no interaction.</p></div>
+          <div class="stat"><p class="stat-value">12</p><p class="stat-label">Charts on the default landing view.</p></div>
+          <div class="stat"><p class="stat-value">6 clicks</p><p class="stat-label">To reach the most-requested metric.</p></div>
+        </div>
+        <div class="quotes">
+          <blockquote>
+            <p>“I open it, see twelve charts, and have no idea which one I'm supposed to act on. So I close it.”</p>
+            <footer>Marketing manager</footer>
+          </blockquote>
+          <blockquote>
+            <p>“The number I need is in there, but it takes six clicks and three filters to find it.”</p>
+            <footer>Growth analyst</footer>
+          </blockquote>
+        </div>
+        <p class="source">Metrics and quotes from the project brief.</p>
+      </div>
+
+      <div class="card">
+        <h2>How the test works</h2>
+        <ol class="steps">
+          <li>Each participant gets the same task and is assigned one version: <strong>A</strong>, today's 12-chart view, or <strong>B</strong>, the insight-first view. Both show the same synthetic data.</li>
+          <li>They press <strong>I found it</strong> when they know the key insight and what to do, or <strong>I'd close this dashboard</strong> if they would normally give up.</li>
+          <li>They then pick the insight and the action from short lists.</li>
+          <li>Results compare A and B against the success criteria and the kill switch.</li>
+        </ol>
+        <div class="notice">
+          <strong>What this prototype measures:</strong> time to "I found it", whether the insight and action were correct, explicit abandonment, time to first interaction, and clicks.
+          <br><strong>What it can't measure:</strong> the real bounce rate, which needs live traffic. Explicit abandonment is used as the stand-in for bounce. No interaction in the first 15 seconds is tracked separately and is never counted as abandonment.
+        </div>
+        <div class="actions">
+          <button type="button" class="btn" data-go="start">Start a participant session</button>
+          <button type="button" class="btn secondary" data-go="results">View results (<span id="brief-count">0</span>)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Participant start -->
+    <section class="screen" id="screen-start" aria-labelledby="start-title" hidden>
+      <div class="facilitator">
+        <strong>Facilitator:</strong> set the version, then hand the device to the participant.
+        <label>Version <select id="assign">
+          <option value="balanced">Balanced (fewer sessions first)</option>
+          <option value="A">A · Current 12-chart view</option>
+          <option value="B">B · Insight-first view</option>
+        </select></label>
+      </div>
+      <div class="card">
+        <p class="label">Your task</p>
+        <h1 id="start-title" tabindex="-1" class="task">You're a growth lead doing your Monday metrics review. Find the most important thing happening this week, and what you should do about it.</h1>
+        <p class="muted">When you know, press <strong>I found it</strong>. If you'd normally give up and close the dashboard, press <strong>I'd close this dashboard</strong>. There are no wrong ways to explore.</p>
+        <div class="actions">
+          <button type="button" class="btn" id="start-btn">Start</button>
+          <button type="button" class="btn quiet" data-go="brief">Back to brief</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Version A: current 12-chart landing view -->
+    <section class="screen" id="screen-a" aria-labelledby="a-title" hidden>
+      <div class="dash-head">
+        <h1 id="a-title" tabindex="-1">Analytics overview</h1>
+        <span class="muted small">Last 8 weeks · All plans</span>
+      </div>
+      <div class="chart-grid" id="chart-grid"></div>
+    </section>
+
+    <!-- 4. Version B: insight-first view -->
+    <section class="screen" id="screen-b" aria-labelledby="b-label" hidden>
+      <section class="insight" aria-labelledby="b-label">
+        <p class="label" id="b-label" tabindex="-1">Most important insight this week</p>
+        <div>
+          <p class="metric-name">Account churn rate</p>
+          <div class="value-row">
+            <p class="value">4.4%</p>
+            <p class="change"><span aria-hidden="true">▲</span> +38% <span class="vs">vs typical week (3.2%)</span></p>
+            <span class="health bad"><span class="dot" aria-hidden="true"></span>Needs attention</span>
+          </div>
+          <p class="takeaway">More accounts are cancelling than usual, and almost all of the increase is coming from Starter-plan customers.</p>
+        </div>
+        <figure style="margin:0">
+          <figcaption class="trend-title">Weekly churn rate, last 5 weeks</figcaption>
+          <svg class="trend-chart" viewBox="0 0 340 186" role="img" aria-label="Weekly churn: Sep 28 3.1%, Oct 5 3.3%, Oct 12 3.2%, Oct 19 3.2%, all Healthy. Oct 26, this week, 4.4%, Needs attention. Typical week 3.2%.">
+            <g class="zones">
+              <rect class="zone-bad" x="34" y="24" width="296" height="50.4"/>
+              <rect class="zone-caution" x="34" y="74.4" width="296" height="25.2"/>
+              <rect class="zone-good" x="34" y="99.6" width="296" height="50.4"/>
+            </g>
+            <g class="zone-labels">
+              <text class="bad" x="38" y="35">Needs attention (above 4.0%)</text>
+              <text class="caution" x="38" y="90.5">Caution (3.5–4.0%)</text>
+              <text class="good" x="38" y="146">Healthy (below 3.5%)</text>
+            </g>
+            <g class="grid">
+              <line x1="34" x2="330" y1="124.8" y2="124.8"/>
+              <line x1="34" x2="330" y1="74.4" y2="74.4"/>
+              <line x1="34" x2="330" y1="24" y2="24"/>
+            </g>
+            <g>
+              <text x="28" y="128.8" text-anchor="end">3%</text>
+              <text x="28" y="78.4" text-anchor="end">4%</text>
+              <text x="28" y="28" text-anchor="end">5%</text>
+              <text x="48" y="174" text-anchor="middle">Sep 28</text>
+              <text x="112" y="174" text-anchor="middle">Oct 5</text>
+              <text x="176" y="174" text-anchor="middle">Oct 12</text>
+              <text x="240" y="174" text-anchor="middle">Oct 19</text>
+              <text x="304" y="174" text-anchor="middle">Oct 26</text>
+            </g>
+            <line class="benchmark" x1="34" x2="330" y1="114.72" y2="114.72"/>
+            <text class="benchmark-label" x="330" y="140" text-anchor="end">Typical week: 3.2%</text>
+            <polyline class="trend-line" points="48,119.76 112,109.68 176,114.72 240,114.72 304,54.24"/>
+            <g class="points">
+              <circle cx="48" cy="119.76" r="4"/>
+              <circle cx="112" cy="109.68" r="4"/>
+              <circle cx="176" cy="114.72" r="4"/>
+              <circle cx="240" cy="114.72" r="4"/>
+              <circle class="now" cx="304" cy="54.24" r="6"/>
+            </g>
+            <text class="now-label" x="292" y="50" text-anchor="end">4.4% this week</text>
+          </svg>
+        </figure>
+        <div class="action">
+          <p class="label">Recommended next action</p>
+          <p class="action-text">Reach out to at-risk Starter-plan accounts this week.</p>
+          <dl class="plan">
+            <dt>Who</dt><dd>Customer Success lead and account managers</dd>
+            <dt>What</dt><dd>Identify Starter-plan accounts showing cancellation risk and prioritize outreach</dd>
+            <dt>When</dt><dd>Begin outreach this week</dd>
+            <dt>Why</dt><dd>The increase in churn is concentrated among Starter-plan customers</dd>
+            <dt>Measure</dt><dd>Track accounts contacted, responses, and cancellations that follow</dd>
+          </dl>
+          <p class="caveat">Outreach hasn't been shown to reduce churn here. Treat this as a test and judge it by the measures above.</p>
+        </div>
+      </section>
+      <section class="supporting" aria-labelledby="b-support">
+        <div class="supporting-head">
+          <h2 class="supporting-title" id="b-support">Supporting metrics</h2>
+          <p class="supporting-sub">No unusual changes this week. All 4 are <span class="health good"><span class="dot" aria-hidden="true"></span>Healthy</span></p>
+        </div>
+        <div class="tiles" id="b-tiles"></div>
+      </section>
+    </section>
+
+    <!-- 5a. Answer check -->
+    <section class="screen" id="screen-answer" aria-labelledby="answer-title" hidden>
+      <div class="card">
+        <h1 id="answer-title" tabindex="-1">Two quick questions</h1>
+        <p class="muted">Pick the answer closest to what you found.</p>
+        <fieldset>
+          <legend>1. What's the most important thing happening this week?</legend>
+          <label class="option"><input type="radio" name="q1" value="signups"><span>Sign-ups dropped sharply</span></label>
+          <label class="option"><input type="radio" name="q1" value="churn"><span>Account churn is up, mostly among Starter-plan customers</span></label>
+          <label class="option"><input type="radio" name="q1" value="bookings"><span>New bookings fell below target</span></label>
+          <label class="option"><input type="radio" name="q1" value="tickets"><span>Support tickets spiked</span></label>
+        </fieldset>
+        <fieldset>
+          <legend>2. What should the team do next?</legend>
+          <label class="option"><input type="radio" name="q2" value="ads"><span>Increase ad spend to bring in more sign-ups</span></label>
+          <label class="option"><input type="radio" name="q2" value="price"><span>Raise Starter-plan prices</span></label>
+          <label class="option"><input type="radio" name="q2" value="outreach"><span>Have Customer Success reach out to at-risk Starter-plan accounts</span></label>
+          <label class="option"><input type="radio" name="q2" value="nothing"><span>Nothing, everything is normal</span></label>
+        </fieldset>
+        <div class="actions">
+          <button type="button" class="btn" id="answer-btn" disabled>Submit</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5b. Thanks -->
+    <section class="screen" id="screen-thanks" aria-labelledby="thanks-title" hidden>
+      <div class="card">
+        <h1 id="thanks-title" tabindex="-1">Thanks, that's it.</h1>
+        <p class="muted">Please hand the device back to the facilitator.</p>
+        <div class="actions">
+          <button type="button" class="btn" data-go="start">Next participant</button>
+          <button type="button" class="btn quiet" data-go="brief">Facilitator: back to brief</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Results -->
+    <section class="screen" id="screen-results" aria-labelledby="results-title" hidden>
+      <div class="card">
+        <p class="label">Signal V3 · Results</p>
+        <h1 id="results-title" tabindex="-1">Results so far</h1>
+        <div class="notice">Results from moderated sessions recorded in this browser on this device. Dashboard data is synthetic. Explicit abandonment is a stand-in for bounce rate, not the real production bounce rate. With fewer than 5 sessions per version, treat results as directional only.</div>
+        <div id="results-body"></div>
+        <div class="actions">
+          <button type="button" class="btn" data-go="start">Start a participant session</button>
+          <button type="button" class="btn secondary" id="export-btn">Export CSV</button>
+          <button type="button" class="btn quiet" data-go="brief">Back to brief</button>
+          <button type="button" class="btn danger" id="clear-btn">Clear all results</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="testbar" id="testbar" hidden>
+    <div class="testbar-inner">
+      <span class="testbar-task">Find the most important thing this week, and what to do about it.</span>
+      <div class="actions">
+        <button type="button" class="btn quiet" id="abandon-btn">I'd close this dashboard</button>
+        <button type="button" class="btn" id="found-btn">I found it</button>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="detail" aria-labelledby="detail-title">
+    <div class="dialog-head">
+      <div>
+        <p class="label">Metric detail</p>
+        <h2 id="detail-title"></h2>
+        <p class="muted small" id="detail-sub"></p>
+      </div>
+      <button type="button" class="btn quiet" id="detail-close">Close</button>
+    </div>
+    <svg class="detail-chart" id="detail-chart" viewBox="0 0 340 170" role="img"></svg>
+    <div class="actions" style="margin-top:12px">
+      <button type="button" class="btn secondary" id="breakdown-btn">Break down by plan</button>
+    </div>
+    <div id="breakdown" hidden></div>
+  </dialog>
+
+  <script>
+    (function () {
+      // ---------- SYNTHETIC dashboard data (not real). 8 weeks, week of Sep 7 to week of Oct 26, 2026. ----------
+      var WEEKS = ['Sep 7', 'Sep 14', 'Sep 21', 'Sep 28', 'Oct 5', 'Oct 12', 'Oct 19', 'Oct 26'];
+      var PLANS = ['Starter', 'Pro', 'Enterprise'];
+      // type: int (count), usd, usdk (thousands of dollars), rate (percent, change in points), score
+      var METRICS = [
+        { name: 'Sessions', type: 'int', v: [47100, 48900, 46800, 49300, 47900, 48600, 47700, 48210] },
+        { name: 'Page views', type: 'int', v: [191000, 198200, 189500, 200100, 193800, 197300, 195000, 196400] },
+        { name: 'Sign-ups', type: 'int', v: [2870, 2955, 2890, 2880, 2941, 2905, 2924, 2912] },
+        { name: 'Trial starts', type: 'int', v: [1150, 1210, 1170, 1195, 1160, 1205, 1172, 1184] },
+        { name: 'Activation rate', type: 'rate', v: [41.6, 42.3, 41.9, 41.8, 42.2, 41.9, 42.0, 42.1] },
+        { name: 'Trial-to-paid', type: 'rate', v: [14.1, 13.8, 14.3, 14.2, 13.9, 14.1, 14.1, 14.0] },
+        { name: 'MRR', type: 'usdk', v: [1391, 1398, 1402, 1408, 1411, 1416, 1419, 1421] },
+        { name: 'New bookings', type: 'usd', v: [109800, 111900, 108400, 108900, 112400, 109700, 110000, 111200] },
+        { name: 'Account churn rate', type: 'rate', v: [3.2, 3.0, 3.3, 3.1, 3.3, 3.2, 3.2, 4.4],
+          plans: [[7.6, 5.0], [2.3, 2.2], [0.8, 0.8]] },
+        { name: 'Net revenue retention', type: 'rate', v: [104.2, 104.0, 104.5, 104.1, 104.3, 104.4, 104.2, 103.9] },
+        { name: 'NPS', type: 'score', v: [37, 39, 38, 36, 38, 39, 37, 38] },
+        { name: 'Support tickets', type: 'int', v: [598, 640, 605, 622, 590, 615, 601, 612] }
+      ];
+      // Supporting metrics for version B (same synthetic values as Signal V2)
+      var TILES = [
+        { name: 'Sign-ups', value: '2,912', change: '−0.4% · normal range', v: [2880, 2941, 2905, 2924, 2912], threshold: 2800, rule: 'Caution below 2,800' },
+        { name: 'Activation rate', value: '42.1%', change: '+0.3% · normal range', v: [41.8, 42.2, 41.9, 41.97, 42.1], threshold: 40, rule: 'Caution below 40.0%' },
+        { name: 'Trial-to-paid', value: '14.0%', change: '−0.6% · normal range', v: [14.2, 13.9, 14.1, 14.085, 14.0], threshold: 13, rule: 'Caution below 13.0%' },
+        { name: 'New bookings', value: '$111,200', change: '+1.1% · normal range', v: [108900, 112400, 109700, 110000, 111200], threshold: 100000, rule: 'Caution below $100,000' }
+      ];
+
+      // ---------- Formatting ----------
+      function fmt(m, x) {
+        if (m.type === 'int') return Math.round(x).toLocaleString('en-US');
+        if (m.type === 'usd') return '$' + Math.round(x).toLocaleString('en-US');
+        if (m.type === 'usdk') return '$' + (x / 1000).toFixed(2) + 'M';
+        if (m.type === 'rate') return x.toFixed(1) + '%';
+        return String(Math.round(x));
+      }
+      function sign(x, digits) {
+        var s = Math.abs(x).toFixed(digits);
+        if (Number(s) === 0) return s;
+        return (x < 0 ? '−' : '+') + s;
+      }
+      function changeText(m, now, before) {
+        if (m.type === 'rate') return sign(now - before, 1) + ' pts';
+        if (m.type === 'score') return sign(now - before, 0) + ' pts';
+        return sign((now - before) / before * 100, 1) + '%';
+      }
+      function avg(a) { return a.reduce(function (s, x) { return s + x; }, 0) / a.length; }
+      function median(a) {
+        if (!a.length) return null;
+        var s = a.slice().sort(function (x, y) { return x - y; }), mid = Math.floor(s.length / 2);
+        return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+      }
+      function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+      // ---------- Charts ----------
+      function sparkMinMax(values) {
+        var lo = Math.min.apply(null, values), hi = Math.max.apply(null, values), pad = (hi - lo) * 0.1 || 1;
+        lo -= pad; hi += pad;
+        var pts = values.map(function (v, i) {
+          return (i * 100 / (values.length - 1)).toFixed(2) + ',' + (40 - (v - lo) / (hi - lo) * 40).toFixed(2);
+        }).join(' ');
+        return '<svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + pts + '"/></svg>';
+      }
+      // Fixed ±12% band around the 5-week average, same as Signal V2
+      function sparkBand(t) {
+        var mean = avg(t.v), half = mean * 0.12;
+        function y(v) { return (14 - (v - mean) / half * 12).toFixed(2); }
+        var pts = t.v.map(function (v, i) { return (2 + i * 24) + ',' + y(v); }).join(' ');
+        return '<svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none" role="img" aria-label="' + esc(t.name) +
+          ', last 5 weeks, Healthy. ' + esc(t.rule) + '."><line class="spark-threshold" x1="0" x2="100" y1="' + y(t.threshold) +
+          '" y2="' + y(t.threshold) + '"/><polyline points="' + pts + '"/></svg>';
+      }
+      function detailChart(m) {
+        var v = m.v, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), pad = (hi - lo) * 0.15 || 1;
+        lo -= pad; hi += pad;
+        function x(i) { return 44 + i * (286 / (v.length - 1)); }
+        function y(val) { return 130 - (val - lo) / (hi - lo) * 110; }
+        var s = '<g class="grid"><line x1="40" x2="330" y1="20" y2="20"/><line x1="40" x2="330" y1="130" y2="130"/></g>' +
+          '<text x="36" y="24" text-anchor="end">' + esc(fmt(m, hi)) + '</text>' +
+          '<text x="36" y="134" text-anchor="end">' + esc(fmt(m, lo)) + '</text>';
+        WEEKS.forEach(function (w, i) {
+          if (i % 2 === 1) s += '<text x="' + x(i) + '" y="156" text-anchor="' + (i === WEEKS.length - 1 ? 'end' : 'middle') + '">' + w + '</text>';
+        });
+        s += '<polyline points="' + v.map(function (val, i) { return x(i) + ',' + y(val); }).join(' ') + '"/>';
+        v.forEach(function (val, i) { s += '<circle cx="' + x(i) + '" cy="' + y(val) + '" r="3"/>'; });
+        return s;
+      }
+
+      // ---------- Version A: render the 12-chart grid ----------
+      var grid = document.getElementById('chart-grid');
+      grid.innerHTML = METRICS.map(function (m, i) {
+        var now = m.v[m.v.length - 1], before = m.v[m.v.length - 2];
+        return '<button type="button" class="chart-card" data-metric="' + i + '">' +
+          '<span class="chart-name">' + esc(m.name) + '</span>' +
+          '<span class="chart-value">' + esc(fmt(m, now)) + '</span>' +
+          '<span class="chart-change">' + esc(changeText(m, now, before)) + ' vs last week</span>' +
+          sparkMinMax(m.v) + '</button>';
+      }).join('');
+
+      var dialog = document.getElementById('detail');
+      var breakdown = document.getElementById('breakdown');
+      var breakdownBtn = document.getElementById('breakdown-btn');
+      var openMetric = null;
+
+      grid.addEventListener('click', function (evt) {
+        var card = evt.target.closest('.chart-card');
+        if (!card) return;
+        var m = METRICS[Number(card.dataset.metric)];
+        openMetric = m;
+        var now = m.v[m.v.length - 1], typical = avg(m.v.slice(3, 7));
+        document.getElementById('detail-title').textContent = m.name;
+        document.getElementById('detail-sub').textContent = 'This week: ' + fmt(m, now) + ' · ' + changeText(m, now, typical) + ' vs typical week (average of prior 4 weeks)';
+        var chart = document.getElementById('detail-chart');
+        chart.setAttribute('aria-label', m.name + ', last 8 weeks: ' + m.v.map(function (val, i) { return WEEKS[i] + ' ' + fmt(m, val); }).join(', '));
+        chart.innerHTML = detailChart(m);
+        breakdown.hidden = true;
+        breakdownBtn.hidden = false;
+        dialog.showModal();
+      });
+
+      breakdownBtn.addEventListener('click', function () {
+        var m = openMetric, rows;
+        var now = m.v[m.v.length - 1], typical = avg(m.v.slice(3, 7));
+        if (m.plans) {
+          rows = m.plans.map(function (p, i) {
+            return [PLANS[i], fmt(m, p[0]), changeText(m, p[0], p[1]) + ' (typical ' + fmt(m, p[1]) + ')'];
+          });
+        } else {
+          var shares = [0.52, 0.33, 0.15], rateOffsets = [-0.04, 0.02, 0.06], nudges = [-0.2, 0.1, 0.1];
+          rows = PLANS.map(function (plan, i) {
+            var val = m.type === 'rate' || m.type === 'score' ? now * (1 + rateOffsets[i]) : now * shares[i];
+            var base = m.type === 'rate' || m.type === 'score' ? typical * (1 + rateOffsets[i]) : typical * shares[i];
+            var change = m.type === 'rate' || m.type === 'score'
+              ? changeText(m, val + nudges[i], base)
+              : sign((now - typical) / typical * 100 + nudges[i], 1) + '%';
+            return [plan, fmt(m, val), change];
+          });
+        }
+        breakdown.innerHTML = '<table><thead><tr><th>Plan</th><th>This week</th><th>vs typical week</th></tr></thead><tbody>' +
+          rows.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>'; }).join('') +
+          '</tbody></table>';
+        breakdown.hidden = false;
+        breakdownBtn.hidden = true;
+      });
+      document.getElementById('detail-close').addEventListener('click', function () { dialog.close(); });
+
+      // ---------- Version B: supporting tiles ----------
+      document.getElementById('b-tiles').innerHTML = TILES.map(function (t) {
+        return '<div class="tile"><p class="tile-name">' + esc(t.name) + '</p>' +
+          '<div class="tile-head"><p class="tile-value">' + esc(t.value) + '</p>' +
+          '<span class="health good"><span class="dot" aria-hidden="true"></span>Healthy</span></div>' +
+          '<p class="tile-change">' + esc(t.change) + '</p>' + sparkBand(t) + '</div>';
+      }).join('');
+
+      // ---------- Session storage (this browser only) ----------
+      var STORE = 'signal-v3-sessions';
+      var memory = [];
+      function loadSessions() {
+        try { var raw = localStorage.getItem(STORE); return raw ? JSON.parse(raw) : memory; } catch (e) { return memory; }
+      }
+      function saveSessions(list) {
+        memory = list;
+        try { localStorage.setItem(STORE, JSON.stringify(list)); } catch (e) { /* keep in memory only */ }
+      }
+
+      // ---------- Navigation ----------
+      var screens = ['brief', 'start', 'a', 'b', 'answer', 'thanks', 'results'];
+      var topRight = document.getElementById('topbar-right');
+      var testbar = document.getElementById('testbar');
+      var current = null;
+
+      function show(name) {
+        screens.forEach(function (s) { document.getElementById('screen-' + s).hidden = s !== name; });
+        var inSession = name === 'a' || name === 'b';
+        testbar.hidden = !inSession;
+        topRight.innerHTML = (name === 'brief' || name === 'results')
+          ? 'Hypothesis test prototype · <span class="synthetic">Synthetic data</span>'
+          : 'Week of Oct 26 – Nov 1, 2026 · <span class="synthetic">Synthetic demo data</span>';
+        if (name === 'brief') document.getElementById('brief-count').textContent = loadSessions().length;
+        if (name === 'results') renderResults();
+        window.scrollTo(0, 0);
+        var heading = document.querySelector('#screen-' + name + ' [tabindex="-1"]');
+        if (heading) heading.focus({ preventScroll: true });
+      }
+
+      document.addEventListener('click', function (evt) {
+        var go = evt.target.closest('[data-go]');
+        if (go) show(go.dataset.go);
+      });
+
+      // ---------- Running a session ----------
+      function pickVariant() {
+        var choice = document.getElementById('assign').value;
+        if (choice === 'A' || choice === 'B') return choice;
+        var list = loadSessions();
+        var a = list.filter(function (s) { return s.variant === 'A'; }).length;
+        var b = list.length - a;
+        if (a !== b) return a < b ? 'A' : 'B';
+        return Math.random() < 0.5 ? 'A' : 'B';
+      }
+
+      document.getElementById('start-btn').addEventListener('click', function () {
+        var variant = pickVariant();
+        current = { variant: variant, startedAt: new Date().toISOString(), t0: performance.now(), firstInteractionMs: null, clicks: 0 };
+        if (dialog.open) dialog.close();
+        show(variant === 'A' ? 'a' : 'b');
+      });
+
+      function onInteraction(evt) {
+        if (!current || current.outcome) return;
+        if (current.firstInteractionMs === null) current.firstInteractionMs = Math.round(performance.now() - current.t0);
+        if (evt.type === 'pointerdown' && !testbar.contains(evt.target)) current.clicks += 1;
+      }
+      document.addEventListener('pointerdown', onInteraction, true);
+      document.addEventListener('keydown', onInteraction, true);
+
+      function finish(extra) {
+        var s = current;
+        Object.keys(extra).forEach(function (k) { s[k] = extra[k]; });
+        s.noInteraction15s = s.firstInteractionMs === null || s.firstInteractionMs > 15000;
+        delete s.t0;
+        var list = loadSessions().slice();
+        s.id = list.length + 1;
+        list.push(s);
+        saveSessions(list);
+        current = null;
+      }
+
+      document.getElementById('found-btn').addEventListener('click', function () {
+        if (!current) return;
+        current.outcome = 'found';
+        current.msToOutcome = Math.round(performance.now() - current.t0);
+        if (dialog.open) dialog.close();
+        document.querySelectorAll('#screen-answer input').forEach(function (i) { i.checked = false; });
+        answerBtn.disabled = true;
+        show('answer');
+      });
+
+      document.getElementById('abandon-btn').addEventListener('click', function () {
+        if (!current) return;
+        if (dialog.open) dialog.close();
+        current.outcome = 'abandoned';
+        finish({ msToOutcome: Math.round(performance.now() - current.t0), q1: '', q2: '', correct: false });
+        show('thanks');
+      });
+
+      var answerBtn = document.getElementById('answer-btn');
+      document.getElementById('screen-answer').addEventListener('change', function () {
+        answerBtn.disabled = !(document.querySelector('input[name="q1"]:checked') && document.querySelector('input[name="q2"]:checked'));
+      });
+      answerBtn.addEventListener('click', function () {
+        if (!current) return;
+        var q1 = document.querySelector('input[name="q1"]:checked').value;
+        var q2 = document.querySelector('input[name="q2"]:checked').value;
+        finish({ q1: q1, q2: q2, correct: q1 === 'churn' && q2 === 'outreach' });
+        show('thanks');
+      });
+
+      // ---------- Results ----------
+      function pct(n, d) { return d ? Math.round(n / d * 100) + '%' : '—'; }
+      function secs(ms) { return ms === null ? '—' : (ms / 1000).toFixed(1) + 's'; }
+
+      function stats(list) {
+        var found = list.filter(function (s) { return s.outcome === 'found'; });
+        return {
+          n: list.length,
+          win30: list.filter(function (s) { return s.outcome === 'found' && s.correct && s.msToOutcome <= 30000; }).length,
+          correct: list.filter(function (s) { return s.correct; }).length,
+          abandoned: list.filter(function (s) { return s.outcome === 'abandoned'; }).length,
+          quiet15: list.filter(function (s) { return s.noInteraction15s; }).length,
+          medianMs: median(found.map(function (s) { return s.msToOutcome; })),
+          medianClicks: median(found.map(function (s) { return s.clicks; }))
+        };
+      }
+
+      function renderResults() {
+        var list = loadSessions();
+        var body = document.getElementById('results-body');
+        if (!list.length) {
+          body.innerHTML = '<p class="muted">No sessions recorded yet. Results appear here after real participants complete the test.</p>';
+          return;
+        }
+        var A = stats(list.filter(function (s) { return s.variant === 'A'; }));
+        var B = stats(list.filter(function (s) { return s.variant === 'B'; }));
+        function row(label, a, b) { return '<tr><th scope="row">' + label + '</th><td>' + a + '</td><td>' + b + '</td></tr>'; }
+        var html = '<div class="table-wrap"><table><thead><tr><th>Measure</th><th>A · 12-chart view</th><th>B · Insight-first</th></tr></thead><tbody>' +
+          row('Sessions', A.n, B.n) +
+          row('Found insight + action within 30s (target ≥ 70%)', pct(A.win30, A.n), pct(B.win30, B.n)) +
+          row('Answered both questions correctly (any time)', pct(A.correct, A.n), pct(B.correct, B.n)) +
+          row('Median time to "I found it"', secs(A.medianMs), secs(B.medianMs)) +
+          row('Explicitly abandoned: bounce stand-in (target &lt; 40%)', pct(A.abandoned, A.n), pct(B.abandoned, B.n)) +
+          row('No interaction in first 15s (tracked separately, not abandonment)', pct(A.quiet15, A.n), pct(B.quiet15, B.n)) +
+          row('Median clicks before "I found it"', A.medianClicks === null ? '—' : A.medianClicks, B.medianClicks === null ? '—' : B.medianClicks) +
+          '</tbody></table></div>';
+
+        if (B.n) {
+          var winRate = B.win30 / B.n, abandonRate = B.abandoned / B.n;
+          html += '<div class="result-grid" style="margin-top:16px">' +
+            verdict(winRate >= 0.7, '70% find the insight and action within 30s', 'Version B: ' + pct(B.win30, B.n) + ' of ' + B.n + ' sessions.') +
+            verdict(abandonRate < 0.4, 'Bounce below 40% (stand-in: explicit abandonment)', 'Version B: ' + pct(B.abandoned, B.n) + ' abandoned.') +
+            '</div>';
+          html += abandonRate >= 0.6
+            ? '<div class="kill" style="margin-top:12px"><p class="label">Kill switch triggered</p><p>Version B abandonment is ' + pct(B.abandoned, B.n) + ', at or above 60%. Investigate whether we\'re highlighting the wrong metric and pivot if necessary.</p></div>'
+            : '<p class="small muted" style="margin-top:12px">Kill switch not triggered: version B abandonment (' + pct(B.abandoned, B.n) + ') is below 60%.</p>';
+        } else {
+          html += '<p class="small muted" style="margin-top:12px">No version B sessions yet, so the success criteria and kill switch can\'t be checked.</p>';
+        }
+
+        html += '<h2 style="margin-top:20px;font-size:17px">Session log</h2><div class="table-wrap"><table><thead><tr><th>#</th><th>Version</th><th>Outcome</th><th>Time</th><th>Correct</th><th>First interaction</th><th>Clicks</th></tr></thead><tbody>' +
+          list.map(function (s) {
+            return '<tr><td>' + s.id + '</td><td>' + s.variant + '</td><td>' + (s.outcome === 'found' ? 'Found it' : 'Abandoned') + '</td><td>' +
+              secs(s.msToOutcome) + '</td><td>' + (s.outcome === 'found' ? (s.correct ? 'Yes' : 'No') : '—') + '</td><td>' +
+              (s.firstInteractionMs === null ? 'None' : secs(s.firstInteractionMs)) + '</td><td>' + s.clicks + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+        body.innerHTML = html;
+      }
+
+      function verdict(ok, title, detail) {
+        return '<div class="verdict ' + (ok ? 'pass' : 'fail') + '"><strong>' + (ok ? '✓ Met: ' : '✗ Not met: ') + title + '</strong><p>' + detail + '</p></div>';
+      }
+
+      document.getElementById('export-btn').addEventListener('click', function () {
+        var list = loadSessions();
+        var cols = ['id', 'variant', 'startedAt', 'outcome', 'msToOutcome', 'q1', 'q2', 'correct', 'firstInteractionMs', 'noInteraction15s', 'clicks'];
+        var csv = cols.join(',') + '\n' + list.map(function (s) {
+          return cols.map(function (c) { return s[c] === null || s[c] === undefined ? '' : String(s[c]); }).join(',');
+        }).join('\n');
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.download = 'signal-v3-results.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
+
+      document.getElementById('clear-btn').addEventListener('click', function () {
+        if (!loadSessions().length) return;
+        if (window.confirm('Delete all recorded sessions in this browser? This cannot be undone. Export first if you need them.')) {
+          memory = [];
+          try { localStorage.removeItem(STORE); } catch (e) { /* ignore */ }
+          renderResults();
+        }
+      });
+
+      show('brief');
+    })();
+  </script>
+</body>
+</html>
