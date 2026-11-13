@@ -39,11 +39,18 @@ Don't change anything else in the project or touch the underlying logic.
 
 ## Reusable techniques learned
 
-- _____
-- _____
+- Breaking complex development tasks into EXPAND, BEHAVIOR, and REFINE prompts made changes easier to manage.
+- Specifying exact files and components helped prevent unintended changes to other versions.
+- Using consistent design specifications, colors, and data definitions helped maintain visual and analytical consistency.
+- Testing each change before proceeding helped identify layout and calculation issues.
+- Refining one component at a time reduced unnecessary redesigns and preserved existing functionality.
 
 ## What broke (and the fix)
 
 _Where a single mega-prompt failed and chaining fixed it._
 
-_____
+During development, broad prompts sometimes produced unintended layout changes and inconsistencies between dashboard components.
+
+Breaking the work into smaller, focused prompts helped isolate problems. Specifying the exact file, component, expected behavior, and elements that must remain unchanged made revisions more controlled.
+
+The churn visualization also required multiple refinements to improve spacing, clarify percentage-point calculations, and maintain consistent plan colors. Iterative testing and targeted adjustments helped address these issues without redesigning the entire dashboard.
