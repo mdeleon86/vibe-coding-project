@@ -1,0 +1,1769 @@
+<!doctype html>
+<!-- Signal V4: self-contained prototype (HTML + embedded CSS and JavaScript, no external files). Starts from Signal V2 and adds the Churn Detail and Recommended Actions screens. Synthetic data only. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signal V4 · Weekly metrics</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --surface: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #4338ca;
+      --accent-soft: #eef0ff;
+
+      /* Health colors: dark tone for text/marks, soft tone for backgrounds */
+      --good: #15803d;
+      --good-soft: #dcfce7;
+      --caution: #b45309;
+      --caution-soft: #fef3c7;
+      --bad: #b91c1c;
+      --bad-soft: #fee2e2;
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+    .logo { width: 14px; height: 14px; border-radius: 4px; background: var(--accent); }
+    .week { color: var(--muted); font-size: 14px; }
+
+    main.wide { max-width: 1120px; }
+    main { max-width: 880px; margin: 0 auto; padding: 32px 16px 16px; display: grid; gap: 28px; }
+
+    .label {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* Health badges */
+    .health {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.6;
+      white-space: nowrap;
+    }
+    .health .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .health.good { color: var(--good); background: var(--good-soft); }
+    .health.caution { color: var(--caution); background: var(--caution-soft); }
+    .health.bad { color: var(--bad); background: var(--bad-soft); }
+
+    /* Most important insight */
+    .insight {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 5px solid var(--bad);
+      border-radius: 16px;
+      padding: 28px;
+      display: grid;
+      gap: 20px;
+    }
+    .headline-btn {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 12px;
+      background: none;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .headline-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 6px; }
+    .headline-btn:hover .drill-hint { text-decoration: underline; }
+    .drill-hint { display: inline-block; margin-top: 6px; font-size: 14px; font-weight: 600; color: var(--accent); }
+    .drill-hint:empty { display: none; }
+    .metric-name { display: block; margin: 0; font-size: 18px; font-weight: 600; }
+    .value-row { display: flex; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
+    .value { margin: 0; font-size: 72px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; }
+    .change { margin: 0; font-size: 22px; font-weight: 700; }
+    .change.bad { color: var(--bad); }
+    .vs { font-size: 15px; font-weight: 400; color: var(--muted); }
+    .value-row .health { align-self: center; }
+    .takeaway { margin: 12px 0 0; font-size: 19px; line-height: 1.45; max-width: 52ch; }
+
+    /* Churn trend chart */
+    .trend { margin: 0; }
+    .trend-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 16px; max-width: 480px; margin-bottom: 6px; }
+    .trend-title { font-size: 14px; font-weight: 600; color: var(--muted); }
+    .synthetic { display: inline-block; padding: 0 6px; border: 1px dashed #9ca3af; border-radius: 4px; font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+    .range { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .range button { padding: 4px 10px; border: 0; border-left: 1px solid var(--border); background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .range button:first-child { border-left: 0; }
+    .range button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+    .range button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .trend-summary { margin: 0 0 6px; font-size: 14px; max-width: 62ch; }
+    .trend-summary:empty { display: none; }
+    .readout { margin: 4px 0 0; font-size: 13px; font-weight: 600; color: var(--text); min-height: 1.5em; }
+    .trend-chart { display: block; width: 100%; max-width: 480px; height: auto; overflow: visible; }
+    .trend-chart text { font-family: inherit; font-size: 11px; fill: var(--muted); }
+    .trend-chart .zone-good { fill: var(--good-soft); opacity: 0.6; }
+    .trend-chart .zone-caution { fill: var(--caution-soft); opacity: 0.8; }
+    .trend-chart .zone-bad { fill: var(--bad-soft); opacity: 0.6; }
+    .trend-chart .zone-labels text { font-size: 10.5px; font-weight: 600; }
+    .trend-chart .zone-labels .good { fill: var(--good); }
+    .trend-chart .zone-labels .caution { fill: var(--caution); }
+    .trend-chart .zone-labels .bad { fill: var(--bad); }
+    .trend-chart .grid line { stroke: #ffffff; stroke-opacity: 0.7; stroke-width: 1; }
+    .trend-chart .benchmark { stroke: #6b7280; stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .trend-chart .benchmark-label { font-size: 11px; font-weight: 600; }
+    .trend-chart .trend-line { fill: none; stroke: #374151; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .trend-chart .points circle { fill: #374151; stroke: var(--surface); stroke-width: 2; }
+    .trend-chart .points .now { fill: var(--bad); }
+    .trend-chart .points.dense circle { stroke-width: 1; }
+    .trend-chart .guide { stroke: #374151; stroke-width: 1; stroke-dasharray: 2 2; }
+    .trend-chart .focus { fill: none; stroke: var(--accent); stroke-width: 2; }
+    .trend-chart .hit { fill: transparent; cursor: crosshair; }
+    .trend-chart .now-label { font-size: 12px; font-weight: 700; fill: var(--text); }
+    .trend-note { margin: 8px 0 0; font-size: 13px; color: var(--muted); max-width: 62ch; }
+
+    /* Recommended action */
+    .action { background: var(--accent-soft); border: 1px solid #c7d2fe; border-radius: 12px; padding: 18px 20px; }
+    .action .label { color: var(--accent); }
+    .action-text { margin: 6px 0 0; font-size: 20px; font-weight: 700; line-height: 1.35; }
+    .plan { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 14px 0 0; font-size: 15px; }
+    .plan dt { font-weight: 700; color: var(--accent); }
+    .plan dd { margin: 0; }
+    .caveat { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #c7d2fe; font-size: 13px; color: var(--muted); font-style: italic; }
+
+    /* Supporting metrics panel */
+    .supporting { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+    .supporting-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+    .supporting-title { margin: 0; font-size: 17px; font-weight: 700; }
+    .supporting-sub { margin: 0; font-size: 14px; color: var(--muted); }
+    .supporting-sub .health { margin-left: 4px; }
+    .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+    .tile { background: #f9fafb; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+    .tile p { margin: 0; }
+    .tile-name { font-size: 14px; color: var(--muted); }
+    .tile-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
+    .tile-head .health { font-size: 12px; padding: 1px 8px; }
+    .tile-value { font-size: 22px; font-weight: 700; }
+    .tile-change { font-size: 13px; color: var(--muted); }
+    .spark { display: block; width: 100%; height: 28px; margin-top: 10px; overflow: visible; }
+    .spark polyline { fill: none; stroke: #9ca3af; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+    .spark .spark-end { stroke: var(--muted); stroke-width: 5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+    .spark .spark-threshold { stroke: var(--caution); stroke-width: 1.25; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+    .tile .tile-trend { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* Glossary and health ratings */
+    .explainers { display: grid; gap: 12px; }
+    .glossary { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; font-size: 14px; }
+    .glossary summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+    .glossary dl { margin: 12px 0 0; display: grid; gap: 10px; }
+    .glossary dt { font-weight: 700; }
+    .glossary dd { margin: 2px 0 0; color: var(--muted); }
+    .direction { font-weight: 400; color: var(--muted); }
+    .legend { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+    .legend .health { margin-right: 6px; }
+    .ratings-note { margin: 12px 0 0; font-size: 13px; color: var(--muted); font-style: italic; }
+
+    footer { text-align: center; color: var(--muted); font-size: 13px; padding: 16px 16px 28px; }
+
+    @media (max-width: 700px) {
+      .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 480px) {
+      main { padding-top: 20px; }
+      .insight { padding: 20px; }
+      .supporting { padding: 16px; }
+      .value { font-size: 56px; }
+      .plan { grid-template-columns: 1fr; gap: 0; }
+      .plan dd { margin-bottom: 8px; }
+    }
+
+    /* ---------- V4: shared ---------- */
+    .detail-link { display: inline-block; margin-top: 10px; font-size: 15px; font-weight: 600; color: var(--accent); text-decoration: none; }
+    .detail-link:hover { text-decoration: underline; }
+    .crumbs { font-size: 13px; color: var(--muted); }
+    .crumbs a { color: var(--muted); text-decoration: none; }
+    .crumbs a:hover { color: var(--accent); text-decoration: underline; }
+    .crumbs [aria-current] { color: var(--text); font-weight: 600; }
+    .report-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px 16px; }
+    .report-head h1 { margin: 0; font-size: 24px; line-height: 1.25; }
+    .report-head h1:focus { outline: none; }
+    .report-head p { margin: 4px 0 0; }
+    .muted { color: var(--muted); }
+    .small { font-size: 13px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
+    .panel-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 8px; }
+    .panel-head h2 { margin: 0; font-size: 15px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; }
+    .btn:focus-visible, .issue-row:focus-visible, .crumbs a:focus-visible, .prop-value a:focus-visible, .detail-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    /* ---------- V4: Churn Detail (report layout) ---------- */
+    /* minmax(0, 1fr) lets wide content (the plan table) scroll inside its panel instead of widening the page */
+    #screen-churn, #screen-actions { grid-template-columns: minmax(0, 1fr); }
+    #screen-churn { gap: 16px; }
+    .report-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .toolbar-note { font-size: 13px; color: var(--muted); }
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .kpi { padding: 14px 18px; border-left: 1px solid var(--border); }
+    .kpi:first-child { border-left: 0; }
+    .kpi-label { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+    .kpi-value { margin: 4px 0 0; font-size: 26px; font-weight: 700; line-height: 1.15; }
+    .kpi-sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+    .kpi-value.bad { color: var(--bad); }
+    .report-chart { display: block; width: 100%; height: auto; }
+    .report-chart text { font-family: inherit; font-size: 11px; fill: var(--muted); }
+    .report-chart .zone-good { fill: var(--good-soft); opacity: 0.6; }
+    .report-chart .zone-caution { fill: var(--caution-soft); opacity: 0.8; }
+    .report-chart .zone-bad { fill: var(--bad-soft); opacity: 0.6; }
+    .report-chart .zone-labels text { font-size: 10.5px; font-weight: 600; }
+    .report-chart .zone-labels .good { fill: var(--good); }
+    .report-chart .zone-labels .caution { fill: var(--caution); }
+    .report-chart .zone-labels .bad { fill: var(--bad); }
+    .report-chart .grid line { stroke: #ffffff; stroke-opacity: 0.8; }
+    .report-chart .axis-line { stroke: var(--border); }
+    .report-chart .benchmark { stroke: #6b7280; stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .report-chart .benchmark-label { font-weight: 600; }
+    .report-chart .line { fill: none; stroke: #374151; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .report-chart .pt { fill: #374151; stroke: var(--surface); stroke-width: 1.5; }
+    .report-chart .pt.now { fill: var(--bad); stroke-width: 2; }
+    .report-chart .now-label { font-size: 12px; font-weight: 700; fill: var(--text); }
+    .report-chart .plan-line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+    .report-chart .plan-label { font-size: 11px; font-weight: 600; }
+    .cd-summary { margin: 0 0 8px; font-size: 14px; }
+    .breakdown-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+    .chart-caption { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+    .bars { display: grid; gap: 14px; margin-top: 4px; }
+    .bar-row { display: grid; grid-template-columns: 88px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; font-size: 13px; }
+    .bar-row .health { font-size: 12px; padding: 0 8px; }
+    .break-conclusion { margin: 0 0 6px; font-size: 15px; line-height: 1.5; }
+    .threshold-note { margin: 0 0 14px; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+    .data-table td.st-good { color: var(--good); font-weight: 600; }
+    .data-table td.st-caution { color: var(--caution); font-weight: 600; }
+    .data-table td.st-bad { color: var(--bad); font-weight: 600; }
+    .data-table td .health { font-size: 12px; padding: 0 8px; }
+    /* Keeps the table's screen-reader-only text inside the scroll box so it can't widen the page on phones */
+    .table-wrap { position: relative; }
+    .bar-name { font-weight: 600; }
+    .bar-track { position: relative; height: 14px; background: var(--surface-2, #f9fafb); border-radius: 4px; }
+    .bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+    .bar-typical { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #374151; }
+    .bar-value { grid-column: 2 / -1; color: var(--muted); font-size: 12px; }
+    .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; }
+    .data-table th, .data-table td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .data-table th:first-child, .data-table td:first-child { text-align: left; }
+    .data-table thead th { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+    .data-table tbody th { font-weight: 600; }
+    .data-table tr.highlight { background: var(--bad-soft); }
+    .data-table tfoot td, .data-table tfoot th { font-weight: 700; border-bottom: 0; }
+    .table-wrap { overflow-x: auto; }
+    /* Breakdown loading (skeleton), empty and error states */
+    .sk { display: block; border-radius: 6px; background: linear-gradient(90deg, #eceef2 25%, #f6f7f9 37%, #eceef2 63%); background-size: 400% 100%; animation: sk-shimmer 1.4s ease infinite; }
+    @keyframes sk-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+    .sk-chart { height: 200px; margin-top: 22px; }
+    .sk-text { height: 12px; }
+    .sk-bar { height: 14px; }
+    .sk-cell { height: 12px; width: 44px; margin-left: auto; }
+    .sk-kpi { height: 26px; width: 64px; margin-top: 6px; }
+    .sk-kpi-sub { height: 12px; width: 120px; margin-top: 8px; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .state-msg { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 20px; text-align: center; border: 1px dashed #d1d5db; border-radius: 10px; background: #f9fafb; }
+    .state-msg p { margin: 0; max-width: 52ch; font-size: 15px; }
+    .state-msg.error { border: 1px solid #fca5a5; background: var(--bad-soft); }
+    .state-msg.error p { color: #7f1d1d; }
+    .btn.secondary { background: var(--surface); color: var(--accent); }
+    .cta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px 20px; background: var(--accent-soft); border: 1px solid #c7d2fe; border-radius: 12px; padding: 16px 20px; }
+    .cta p { margin: 0; font-size: 15px; max-width: 62ch; }
+
+    /* ---------- V4: Recommended Actions (issue layout) ---------- */
+    #screen-actions { gap: 14px; }
+    .illustrative { display: inline-block; padding: 0 6px; border: 1px dashed var(--caution); border-radius: 4px; font-size: 11px; font-weight: 600; color: var(--caution); white-space: nowrap; }
+    .illustrative-note { margin: 0; font-size: 13px; color: var(--muted); }
+    .issues { display: grid; grid-template-columns: 280px minmax(0, 1fr) 280px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; font-size: 14px; min-height: 480px; }
+    .issue-list { border-right: 1px solid var(--border); }
+    .issue-list-head { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--muted); display: flex; justify-content: space-between; }
+    .issue-list ul { list-style: none; margin: 0; padding: 4px; }
+    .row-prio { display: inline-flex; align-items: center; justify-content: center; }
+    .issue-row { display: grid; grid-template-columns: 16px 46px minmax(0, 1fr) 16px 22px; align-items: center; gap: 8px; min-height: 38px; padding: 6px 10px; border-radius: 6px; color: var(--text); text-decoration: none; }
+    .issue-row:hover { background: var(--surface-2, #f9fafb); }
+    .issue-row[aria-current="true"] { background: var(--accent-soft); }
+    .issue-id { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .issue-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .status-icon { width: 14px; height: 14px; border-radius: 50%; border: 1.5px dashed var(--muted); display: inline-block; }
+    .avatar { width: 22px; height: 22px; border-radius: 50%; background: #e5e7eb; color: #374151; font-size: 9px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+    .prio { display: inline-flex; align-items: center; gap: 6px; }
+    .prio-icon { display: inline-flex; align-items: flex-end; gap: 1px; height: 12px; }
+    .prio-icon i { display: block; width: 3px; background: #9ca3af; border-radius: 1px; }
+    .prio-icon i.on { background: #374151; }
+    .prio-urgent { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 3px; background: var(--caution); color: #fff; font-size: 10px; font-weight: 800; }
+    .issue { padding: 18px 24px 24px; border-right: 1px solid var(--border); min-width: 0; }
+    .issue-meta { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .primary-tag { display: inline-block; padding: 0 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; }
+    .issue h2 { margin: 8px 0 0; font-size: 24px; font-weight: 650; line-height: 1.25; letter-spacing: -0.01em; }
+    .issue h2:focus { outline: none; }
+    .issue-desc { margin: 10px 0 0; color: #374151; }
+    .issue-section { margin-top: 18px; }
+    .issue-section h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+
+    /* Recommended Actions: header sizes and the primary recommended action card */
+    .issue-section { margin-top: 28px; }
+    .primary-card { margin: 4px 0 0; padding: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04), 0 8px 24px rgba(17, 24, 39, 0.06); }
+    .primary-card h2 { margin-top: 12px; font-size: 30px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+    .primary-card .issue-desc { margin-top: 12px; font-size: 16px; line-height: 1.55; color: #4b5563; max-width: 60ch; }
+    .key-details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 24px; margin: 24px 0 0; border-top: 1px solid var(--border); }
+    .key-detail { padding: 16px 0 0; }
+    .key-detail.measure { grid-column: 1 / -1; margin-top: 16px; border-top: 1px solid var(--border); }
+    .key-detail dt { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .key-detail dd { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500; line-height: 1.45; color: var(--text); }
+    .key-note { margin: 20px 0 0; font-size: 12px; color: var(--muted); }
+    @media (max-width: 700px) {
+      .primary-card { padding: 20px; }
+      .primary-card h2 { font-size: 24px; }
+      .key-details { grid-template-columns: minmax(0, 1fr); }
+      .key-detail + .key-detail { margin-top: 14px; border-top: 1px solid var(--border); }
+    }
+    .issue-section p { margin: 0; }
+    .steps { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 8px; }
+    .steps li { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--border); }
+    .steps li:first-child { border-top: 0; }
+    .issue-caveat { margin-top: 16px; padding: 10px 12px; border-left: 3px solid var(--caution); background: var(--caution-soft); border-radius: 6px; font-size: 13px; }
+    .activity { list-style: none; margin: 0; padding: 0; font-size: 13px; color: var(--muted); }
+    .activity li { position: relative; padding: 4px 0 4px 18px; }
+    .activity li::before { content: ""; position: absolute; left: 4px; top: 11px; width: 6px; height: 6px; border-radius: 50%; background: #cbd5e1; }
+    .props { padding: 16px; font-size: 13px; }
+    .props h3 { margin: 0 0 10px; font-size: 12px; font-weight: 600; color: var(--muted); }
+    .prop { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 8px; align-items: center; min-height: 32px; }
+    .prop-value.nowrap { flex-wrap: nowrap; }
+    .prop-trunc { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .prop-label { color: var(--muted); }
+    .prop-value { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+    .prop-value a { color: var(--accent); text-decoration: none; }
+    .prop-value a:hover { text-decoration: underline; }
+    .label-chip { display: inline-block; padding: 0 8px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; }
+
+    @media (max-width: 900px) {
+      .issues { grid-template-columns: minmax(0, 1fr); }
+      .issue-list, .issue { border-right: 0; border-bottom: 1px solid var(--border); }
+      .breakdown-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .kpi:nth-child(3) { border-left: 0; }
+      .kpi:nth-child(n+3) { border-top: 1px solid var(--border); }
+      .issue { padding: 16px; }
+    }
+
+    /* =====================================================================
+       V4 dark design system: one layer that restyles all three screens.
+       ===================================================================== */
+    :root {
+      --bg: #0B1120;
+      --sidebar: #0E1627;
+      --surface: #151F30;
+      --surface-2: #1A2538;
+      --surface-3: #202C42;
+      --text: #E8EEF7;
+      --muted: #8FA1B8;
+      --border: #24324A;
+      --border-strong: #31415E;
+      --accent: #42E8D1;
+      --accent-soft: rgba(66, 232, 209, 0.10);
+      --accent-line: rgba(66, 232, 209, 0.30);
+      --violet: #8B7CF6;
+      --violet-soft: rgba(139, 124, 246, 0.14);
+      --good: #34D399;
+      --good-soft: rgba(52, 211, 153, 0.14);
+      --caution: #FBBF24;
+      --caution-soft: rgba(251, 191, 36, 0.13);
+      --bad: #F87171;
+      --bad-soft: rgba(248, 113, 113, 0.13);
+      --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 10px 30px rgba(2, 6, 18, 0.35);
+      --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+    body { font-family: Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; -webkit-font-smoothing: antialiased; color-scheme: dark; }
+    a { color: var(--accent); }
+
+    /* App shell: persistent sidebar + content */
+    .app { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 100vh; }
+    .content { min-width: 0; }
+    .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 28px; padding: 22px 14px; background: var(--sidebar); border-right: 1px solid var(--border); }
+    .sidebar .brand { display: flex; align-items: center; gap: 10px; padding: 4px 10px; font-size: 15px; font-weight: 800; letter-spacing: 0.18em; color: var(--text); text-decoration: none; }
+    .sidebar .logo { width: 16px; height: 16px; border-radius: 5px; background: linear-gradient(135deg, var(--accent), var(--violet)); box-shadow: 0 0 12px rgba(66, 232, 209, 0.35); }
+    .side-nav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+    .nav-link { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; border: 1px solid transparent; color: var(--muted); font-size: 14px; font-weight: 500; text-decoration: none; transition: background 0.18s var(--ease), color 0.18s var(--ease), border-color 0.18s var(--ease); }
+    .nav-link svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-link:hover { color: var(--text); background: var(--surface); }
+    .nav-link[aria-current="page"] { color: var(--text); background: var(--accent-soft); border-color: var(--accent-line); }
+    .nav-link[aria-current="page"] svg { stroke: var(--accent); }
+    .nav-link:focus-visible, .brand:focus-visible, .nav-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .nav-short { display: none; }
+    .nav-count { margin-left: auto; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--surface-3); color: var(--muted); font-size: 11px; font-weight: 700; text-align: center; line-height: 18px; }
+    .side-note { margin: auto 0 0; padding: 0 10px; font-size: 12px; line-height: 1.7; color: var(--muted); }
+
+    main { padding: 32px 32px 24px; }
+    main.wide { max-width: 1180px; }
+    .screen-enter { animation: screen-in 0.22s var(--ease); }
+    @keyframes screen-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .screen-enter { animation: none; } .nav-card, .nav-link, .ov-kpi { transition: none; } }
+
+    /* Shared surfaces and type */
+    .label { color: var(--muted); letter-spacing: 0.08em; font-size: 12px; }
+    .synthetic { border-color: #4A5A75; color: var(--muted); }
+    .panel, .kpis, .report-toolbar, .glossary, .supporting, .issues, .insight { background: var(--surface); border-color: var(--border); box-shadow: var(--shadow); }
+    .btn { background: var(--accent); border-color: var(--accent); color: #062A26; transition: filter 0.18s var(--ease), box-shadow 0.18s var(--ease); }
+    .btn:hover { filter: brightness(1.06); box-shadow: 0 0 0 4px rgba(66, 232, 209, 0.12); }
+    .btn.secondary { background: transparent; color: var(--accent); border-color: var(--accent-line); }
+    .range { border-color: var(--border); background: var(--surface-2); }
+    .range button { background: transparent; color: var(--muted); border-left-color: var(--border); transition: color 0.15s var(--ease), background 0.15s var(--ease); }
+    .range button:hover { color: var(--text); }
+    .range button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+    .health.good, .health.caution, .health.bad { border: 1px solid currentColor; border-color: color-mix(in srgb, currentColor 35%, transparent); }
+
+    /* Overview: command center */
+    .hero { padding: 6px 0 2px; }
+    .eyebrow { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .eyebrow .synthetic { margin-left: 6px; text-transform: none; letter-spacing: 0; }
+    .hero h1, .report-head h1.page-title { margin: 10px 0 0; font-size: 40px; font-weight: 750; line-height: 1.1; letter-spacing: -0.025em; background: linear-gradient(90deg, #FFFFFF 30%, #B9F6EE); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .hero h1:focus { outline: none; }
+    .subtitle { margin: 12px 0 0; max-width: 62ch; font-size: 17px; line-height: 1.55; color: #B8C5D6; }
+    .ov-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .ov-kpi { padding: 18px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); transition: border-color 0.18s var(--ease); }
+    .ov-kpi:hover { border-color: var(--border-strong); }
+    .ov-kpi.risk { border-color: rgba(248, 113, 113, 0.35); background: linear-gradient(180deg, rgba(248, 113, 113, 0.08), rgba(248, 113, 113, 0) 60%), var(--surface); }
+    .ov-kpi-value { margin: 6px 0 0; font-size: 32px; font-weight: 750; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    .ov-kpi.risk .ov-kpi-value { color: #FF525F; }
+    .ov-kpi .kpi-sub { margin-top: 8px; }
+    /* KPI health scales: cards are columns so every scale lines up at the bottom of its card */
+    .ov-kpi { display: flex; flex-direction: column; }
+    .kpi-scale { margin-top: auto; padding-top: 14px; }
+    .kpi-scale:empty { display: none; }
+    .scale-bar { position: relative; display: flex; height: 8px; border-radius: 999px; }
+    .scale-bar > span:not(.scale-marker) { height: 100%; }
+    .sc-good { background: #00D68F; border-radius: 999px 0 0 999px; }
+    .sc-caution { background: #FFD43B; }
+    .sc-bad { background: #FF525F; border-radius: 0 999px 999px 0; }
+    .scale-marker { position: absolute; top: -5px; width: 4px; height: 18px; margin-left: -2px; border-radius: 2px; background: #FFFFFF; box-shadow: 0 0 0 2px var(--bg), 0 0 8px rgba(255, 255, 255, 0.5); }
+    .scale-ticks { position: relative; height: 16px; margin-top: 4px; font-size: 11px; color: var(--muted); }
+    .scale-ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+    .scale-label { margin: 2px 0 0; min-height: 3em; font-size: 12.5px; line-height: 1.5; color: var(--text); }
+    /* Compact KPI cards: status badge beside the value, tighter spacing; scales still share one bottom line */
+    .ov-kpi { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; column-gap: 10px; padding: 14px 18px; }
+    .ov-kpi > * { grid-column: 1 / -1; }
+    .ov-kpi > .ov-kpi-value { grid-column: 1; margin-top: 4px; font-size: 30px; }
+    .ov-kpi > .ov-kpi-value + .kpi-sub { grid-column: 2; align-self: center; justify-self: start; margin-top: 4px; }
+    .ov-kpi .kpi-sub { margin-top: 6px; font-size: 13px; line-height: 1.45; }
+    .ov-kpi .kpi-scale { align-self: end; margin-top: 0; padding-top: 10px; }
+    .ov-kpi .scale-ticks { height: 13px; margin-top: 2px; font-size: 10.5px; }
+    .ov-kpi .scale-label { min-height: 1.5em; }
+    @media (max-width: 560px) {
+      .ov-kpi > .ov-kpi-value { font-size: 26px; }
+      .ov-kpi > .ov-kpi-value + .kpi-sub { grid-column: 1 / -1; }
+    }
+    .ov-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+    /* The insight card and Supporting metrics share the first row, so their bottoms always line up;
+       the navigation cards sit in the row below, under the insight. */
+    .ov-main { display: contents; }
+    .ov-grid { grid-template-areas: "insight side" "nav ."; align-items: stretch; row-gap: 20px; }
+    .ov-grid > .ov-main > .insight { grid-area: insight; }
+    .ov-grid > .ov-main > .nav-cards { grid-area: nav; }
+    .ov-grid > .ov-side { grid-area: side; }
+    .nav-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .nav-cards .label { grid-column: 1 / -1; margin: 2px 0 0; }
+    .ov-side { min-width: 0; }
+    .ov-side .tiles { grid-template-columns: minmax(0, 1fr); }
+    .nav-card { display: grid; gap: 6px; padding: 18px 18px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); color: var(--text); text-decoration: none; transition: border-color 0.18s var(--ease), transform 0.18s var(--ease), box-shadow 0.18s var(--ease); }
+    .nav-card:hover { border-color: var(--accent-line); transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(66, 232, 209, 0.08), 0 14px 34px rgba(2, 6, 18, 0.45); }
+    .nav-card.primary { background: linear-gradient(160deg, rgba(139, 124, 246, 0.16), rgba(66, 232, 209, 0.06) 70%), var(--surface); border-color: rgba(139, 124, 246, 0.35); }
+    .nav-card:not(.primary) { background: linear-gradient(160deg, rgba(66, 232, 209, 0.14), rgba(66, 232, 209, 0.03) 70%), var(--surface); border-color: rgba(66, 232, 209, 0.35); }
+    .nav-card-icon { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 9px; background: var(--accent-soft); }
+    .nav-card.primary .nav-card-icon { background: var(--violet-soft); }
+    .nav-card-icon svg { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-card.primary .nav-card-icon svg { stroke: var(--violet); }
+    .nav-card-title { margin-top: 4px; font-size: 16px; font-weight: 650; }
+    .nav-card-text { font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+    .nav-card-go { margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--accent); }
+    .nav-card.primary .nav-card-go { color: #B5ABFF; }
+
+    /* Overview insight card and V2 components on dark */
+    .insight { border-top-color: var(--bad); border-radius: 16px; }
+    .value { letter-spacing: -0.03em; }
+    .takeaway { color: #C9D4E3; }
+    .trend-chart .zone-good, .trend-chart .zone-caution, .trend-chart .zone-bad,
+    .report-chart .zone-good, .report-chart .zone-caution, .report-chart .zone-bad { opacity: 1; }
+    .trend-chart .grid line, .report-chart .grid line { stroke: rgba(148, 163, 184, 0.10); stroke-opacity: 1; }
+    .trend-chart .benchmark, .report-chart .benchmark { stroke: #7C8CA5; }
+    .trend-chart .trend-line, .report-chart .line { stroke: var(--accent); stroke-width: 2.25; filter: drop-shadow(0 0 5px rgba(66, 232, 209, 0.45)); }
+    .trend-chart .points circle, .report-chart .pt { fill: var(--accent); stroke: var(--accent); }
+    .trend-chart .points .now, .report-chart .pt.now { fill: var(--bad); stroke: var(--bad); filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.6)); }
+    .trend-chart .guide { stroke: #7C8CA5; }
+    .report-chart .plan-line { filter: drop-shadow(0 0 3px rgba(139, 124, 246, 0.25)); }
+    .report-chart .plan-label { fill: var(--text); }
+    .action { background: linear-gradient(160deg, rgba(66, 232, 209, 0.08), rgba(66, 232, 209, 0.02)), var(--surface-2); border-color: var(--accent-line); }
+    .caveat { border-top-color: var(--accent-line); }
+    .tile { background: var(--surface-2); border-color: var(--border); transition: border-color 0.18s var(--ease); }
+    .tile:hover { border-color: var(--border-strong); }
+    .spark polyline { stroke: #7C8CA5; }
+    .glossary summary { color: var(--text); }
+
+    /* Churn Detail workspace */
+    .crumbs a:hover { color: var(--accent); }
+    .report-head h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.015em; }
+    .report-head h1.page-title { margin: 4px 0 0; width: fit-content; }
+    /* Each page title fades from white to the color of its Overview "Where to go next" link */
+    #cd-title.page-title { background-image: linear-gradient(90deg, #FFFFFF 30%, #42E8D1); }
+    #ac-title.page-title { background-image: linear-gradient(90deg, #FFFFFF 30%, #B5ABFF); }
+    .kpis { border-radius: 14px; }
+    .kpi { border-left-color: var(--border); }
+    .kpi-value { font-size: 28px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+    .panel { border-radius: 14px; padding: 18px 22px; }
+    .panel-head h2 { font-size: 15px; font-weight: 650; }
+    .bar-track { background: var(--surface-3); }
+    .bar-typical { background: #E2E8F0; }
+    .data-table th, .data-table td { border-bottom-color: var(--border); }
+    .data-table tbody tr { transition: background 0.15s var(--ease); }
+    .data-table tbody tr:hover { background: var(--surface-2); }
+    .data-table tr.highlight { background: rgba(139, 124, 246, 0.10); }
+    .cta { background: linear-gradient(120deg, rgba(139, 124, 246, 0.14), rgba(66, 232, 209, 0.08)), var(--surface); border-color: rgba(139, 124, 246, 0.35); }
+    .sk { background: linear-gradient(90deg, #1C2739 25%, #26334A 37%, #1C2739 63%); background-size: 400% 100%; }
+    .state-msg { background: var(--surface-2); border-color: var(--border-strong); }
+    .state-msg.error { background: var(--bad-soft); border-color: rgba(248, 113, 113, 0.45); }
+    .state-msg.error p { color: #FECACA; }
+
+    /* Recommended Actions: action management */
+    .issues { border-radius: 14px; overflow: hidden; }
+    /* Action list across the top; the selected action's details below, with properties to the right */
+    .issues { grid-template-columns: minmax(0, 1fr) 280px; grid-template-areas: "list list" "detail props"; }
+    .issue-list { grid-area: list; border-right: 0; border-bottom: 1px solid var(--border); }
+    .issue { grid-area: detail; border-right: 1px solid var(--border); }
+    .props { grid-area: props; }
+    .issue-list { background: rgba(11, 17, 32, 0.35); }
+    .issue-list-head { border-bottom-color: var(--border); }
+    .issue-row { transition: background 0.15s var(--ease); }
+    .issue-row:hover { background: var(--surface-2); }
+    .issue-row[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+    .status-icon { border-color: #7C8CA5; }
+    .avatar { background: var(--surface-3); color: var(--text); border: 1px solid var(--border-strong); }
+    .prio-icon i { background: #3A4A66; }
+    .prio-icon i.on { background: #E2E8F0; }
+    .prio-urgent { background: var(--caution); color: #1F1300; }
+    .issue { border-right-color: var(--border); }
+    .issue-desc { color: #B8C5D6; }
+    .primary-card { background: linear-gradient(165deg, rgba(139, 124, 246, 0.12), rgba(66, 232, 209, 0.04) 60%), var(--surface-2); border-color: rgba(139, 124, 246, 0.35); box-shadow: 0 0 0 1px rgba(139, 124, 246, 0.06), 0 18px 40px rgba(2, 6, 18, 0.45); }
+    .primary-card .issue-desc { color: #B8C5D6; }
+    .primary-tag { background: var(--violet-soft); color: #C4BBFF; }
+    .key-details, .key-detail.measure { border-top-color: var(--border-strong); }
+    .key-detail dt { color: var(--muted); letter-spacing: 0.02em; }
+    .steps { border-color: var(--border); }
+    .steps li { border-top-color: var(--border); }
+    .activity li::before { background: #4A5A75; }
+    .props { background: rgba(11, 17, 32, 0.25); }
+    .label-chip { border-color: var(--border-strong); color: #C9D4E3; }
+    .issue-caveat { color: #FDE68A; }
+
+    /* Churn Detail: calculation, contribution bar, four-line trend chart */
+    .calc-panel { display: grid; gap: 12px; }
+    .calc summary { cursor: pointer; width: fit-content; font-size: 14px; font-weight: 600; color: var(--accent); }
+    .calc summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+    .calc-body { margin-top: 12px; display: grid; gap: 12px; }
+    .equation { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+    .eq-term { display: grid; gap: 2px; }
+    .eq-num { font-size: 22px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .eq-label { font-size: 12px; color: var(--muted); }
+    .eq-op { font-size: 18px; font-weight: 600; color: var(--muted); }
+    .eq-result .eq-num { color: #FF525F; }
+    .calc-table { margin-top: 0; }
+    .calc-table th, .calc-table td { white-space: normal; }
+    .calc-note { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+    .contrib-title { margin: 6px 0 0; font-size: 15px; font-weight: 650; }
+    .donut-wrap { position: relative; }
+    .donut { display: block; width: 100%; height: 120px; }
+    .donut-track { fill: none; stroke: var(--surface-3); stroke-width: 14; }
+    .donut-seg { fill: none; stroke-width: 14; }
+    .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; pointer-events: none; text-align: center; }
+    .donut-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .donut-value { font-size: 32px; font-weight: 750; line-height: 1.05; letter-spacing: -0.02em; color: var(--text); font-variant-numeric: tabular-nums; }
+    .donut-sub { font-size: 12px; font-style: italic; color: var(--muted); }
+    #cd-calc .contrib-labels { justify-items: center; }
+    .contrib { display: grid; gap: 10px; }
+    .contrib-labels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px; }
+    .contrib-label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; font-size: 14px; color: var(--text); }
+    .contrib-name { display: inline-flex; align-items: center; color: var(--muted); }
+    .contrib-label strong { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .contrib-total { font-size: 14px; color: var(--muted); }
+    .contrib-total strong { color: var(--text); font-size: 15px; }
+    .contrib-legend { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--text); }
+    .contrib-key { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .contrib-op { color: var(--muted); }
+    .trend-legend { list-style: none; margin: 0 0 6px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--text); }
+    .trend-legend li { display: inline-flex; align-items: center; gap: 8px; }
+    .lg-line { display: inline-block; width: 22px; height: 2px; border-radius: 2px; }
+    .lg-all { height: 6px; background: #FF525F; }
+    .report-chart .all-line { fill: none; stroke: #FF525F; stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(255, 82, 95, 0.35)); }
+    .report-chart .pl-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    /* Health zones on the trend chart use the same colors as the All plans health gradient */
+    #cd-chart .zone-good { fill: rgba(0, 214, 143, 0.10); }
+    #cd-chart .zone-caution { fill: rgba(255, 212, 59, 0.13); }
+    #cd-chart .zone-bad { fill: rgba(255, 82, 95, 0.10); }
+    #cd-chart .zone-labels .good { fill: #00D68F; }
+    #cd-chart .zone-labels .bad { fill: #FF525F; }
+    .report-chart .now-value { font-size: 17px; font-weight: 800; fill: var(--text); }
+    .report-chart .guide { stroke: #7C8CA5; stroke-width: 1; stroke-dasharray: 2 2; }
+    .report-chart .focus { fill: none; stroke: var(--text); stroke-width: 2; }
+    .report-chart .hit { cursor: crosshair; }
+    #cd-readout { margin: 6px 0 0; min-height: 1.5em; font-size: 13px; font-weight: 600; color: var(--text); }
+    #cd-readout .ro-sep { color: var(--muted); }
+    #cd-readout .ro-good { color: var(--good); }
+    #cd-readout .ro-caution { color: var(--caution); }
+    #cd-readout .ro-bad { color: var(--bad); }
+    #cd-data-note { margin: 6px 0 0; }
+
+    /* Churn Detail contribution box: compact spacing and type */
+    #cd-calc { padding: 14px 20px; gap: 8px; }
+    #cd-calc .calc summary { font-size: 13px; }
+    #cd-calc .contrib-title { margin: 0; font-size: 14px; }
+    #cd-calc .contrib { gap: 6px; }
+    #cd-calc .contrib-label { font-size: 13px; }
+    #cd-calc .contrib-label strong { font-size: 14px; }
+    #cd-calc .contrib-total { font-size: 13px; }
+    #cd-calc .contrib-total strong { font-size: 14px; }
+    #cd-calc .contrib-legend { row-gap: 2px; }
+    #cd-calc .contrib-legend .calc-note { font-size: 12px; line-height: 1.45; }
+
+    /* Overview insight card: tighter spacing (all widths) and smaller type (wider screens only) */
+    #screen-overview .insight { padding: 22px; gap: 12px; align-content: start; }
+    #screen-overview .insight .value { color: #FF525F; }
+    #screen-overview .headline-btn { margin-bottom: 10px; }
+    #screen-overview .headline .takeaway { display: inline; margin: 0; }
+    #screen-overview .headline .detail-link { margin: 0 0 0 6px; white-space: nowrap; }
+    #screen-overview .trend-head { max-width: none; }
+    #screen-overview .trend-summary { font-size: 13px; margin-bottom: 4px; max-width: none; }
+    #screen-overview .trend-chart { max-width: 400px; }
+    #screen-overview .trend-note { font-size: 12px; line-height: 1.45; margin-top: 6px; }
+    #screen-overview .action { padding: 12px 16px; }
+    #screen-overview .plan { gap: 2px 14px; margin-top: 8px; }
+    #screen-overview .caveat { margin-top: 8px; padding-top: 6px; font-size: 12px; }
+    @media (min-width: 561px) {
+      #screen-overview .value { font-size: 56px; }
+      #screen-overview .takeaway { font-size: 16px; }
+      #screen-overview .action-text { font-size: 17px; }
+      #screen-overview .plan { font-size: 14px; }
+    }
+    @media (max-width: 480px) {
+      #screen-overview .insight { padding: 18px; }
+    }
+
+    /* Layout at smaller widths */
+    @media (max-width: 1000px) {
+      .issues { grid-template-columns: minmax(0, 1fr); grid-template-areas: "list" "detail" "props"; }
+      .issue { border-right: 0; }
+      .props { border-top: 1px solid var(--border); padding: 18px 24px; }
+    }
+    @media (max-width: 1080px) {
+      .ov-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "insight" "nav" "side"; }
+      .ov-side .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .ov-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 860px) {
+      .app { grid-template-columns: minmax(0, 1fr); }
+      .sidebar { position: sticky; top: 0; z-index: 30; height: auto; flex-direction: row; align-items: center; gap: 10px; padding: 8px 12px; border-right: 0; border-bottom: 1px solid var(--border); background: rgba(14, 22, 39, 0.92); backdrop-filter: blur(8px); }
+      .sidebar .brand { padding: 4px 2px; font-size: 13px; letter-spacing: 0.14em; }
+      .side-nav { flex: 1; min-width: 0; }
+      .side-nav ul { display: flex; gap: 4px; }
+      .side-nav li { flex: 1; }
+      .nav-link { justify-content: center; gap: 6px; padding: 8px 6px; font-size: 13px; min-height: 40px; }
+      .nav-full, .nav-count, .side-note { display: none; }
+      .nav-short { display: inline; }
+      main { padding: 22px 16px 20px; }
+    }
+    @media (max-width: 560px) {
+      .sidebar .brand span:last-child { display: none; }
+      .hero h1, .report-head h1.page-title { font-size: 30px; }
+      .subtitle { font-size: 16px; }
+      .ov-kpis { gap: 10px; }
+      .ov-kpi { padding: 14px; }
+      .ov-kpi-value { font-size: 26px; }
+      .nav-cards { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+  <aside class="sidebar">
+    <a class="brand" href="#/overview" aria-label="Signal home"><span class="logo" aria-hidden="true"></span><span>SIGNAL</span></a>
+    <nav class="side-nav" aria-label="Main">
+      <ul>
+        <li><a class="nav-link" href="#/overview" data-screen="overview" aria-label="Overview">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1.5"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5"/><rect x="9" y="9" width="5.5" height="5.5" rx="1.5"/></svg>
+          <span class="nav-label">Overview</span></a></li>
+        <li><a class="nav-link" href="#/churn" data-screen="churn" aria-label="Churn Detail">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><polyline points="1.5,12 5.5,8 8.5,10 14.5,3.5"/><line x1="1.5" y1="14.5" x2="14.5" y2="14.5"/></svg>
+          <span class="nav-label"><span class="nav-full">Churn Detail</span><span class="nav-short">Churn</span></span></a></li>
+        <li><a class="nav-link" href="#/actions" data-screen="actions" aria-label="Recommended Actions, 3 actions">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><polyline points="5,8.2 7.2,10.3 11,6"/></svg>
+          <span class="nav-label"><span class="nav-full">Recommended Actions</span><span class="nav-short">Actions</span></span><span class="nav-count" aria-hidden="true">3</span></a></li>
+      </ul>
+    </nav>
+    <p class="side-note"><span class="synthetic">Synthetic demo data</span><br>Week of Oct 26 – Nov 1, 2026</p>
+  </aside>
+  <div class="content">
+
+  <main class="wide" id="screen-overview" aria-labelledby="ov-title">
+    <header class="hero">
+      <p class="eyebrow">SIGNAL · Weekly churn review · Week of Oct 26 – Nov 1, 2026 <span class="synthetic">Synthetic demo data</span></p>
+      <h1 id="ov-title" tabindex="-1">Customer Churn Intelligence</h1>
+      <p class="subtitle">Identify which customers are leaving, understand what's driving churn, and prioritize actions to improve retention.</p>
+    </header>
+
+    <section class="ov-kpis" aria-label="Key churn indicators">
+      <div class="ov-kpi risk">
+        <p class="kpi-label">Account churn rate</p>
+        <p class="ov-kpi-value">4.4%</p>
+        <p class="kpi-sub"><span class="health bad"><span class="dot" aria-hidden="true"></span>Needs attention</span></p>
+        <p class="kpi-sub">▲ +38% vs typical week (3.2%)</p>
+        <div class="kpi-scale" id="ov-scale-churn"></div>
+      </div>
+      <div class="ov-kpi" id="ov-kpi-cancels">
+        <p class="kpi-label">Cancellations this week</p>
+        <p class="ov-kpi-value" id="ov-cancels"></p>
+        <p class="kpi-sub" id="ov-cancels-badge"></p>
+        <p class="kpi-sub" id="ov-cancels-sub"></p>
+        <div class="kpi-scale" id="ov-scale-cancels"></div>
+      </div>
+      <div class="ov-kpi" id="ov-kpi-starter">
+        <p class="kpi-label">Starter-plan churn</p>
+        <p class="ov-kpi-value" id="ov-starter"></p>
+        <p class="kpi-sub" id="ov-starter-badge"></p>
+        <p class="kpi-sub" id="ov-starter-sub"></p>
+        <div class="kpi-scale" id="ov-scale-starter"></div>
+      </div>
+      <div class="ov-kpi">
+        <p class="kpi-label">Supporting metrics</p>
+        <p class="ov-kpi-value">4 of 4</p>
+        <p class="kpi-sub"><span class="health good"><span class="dot" aria-hidden="true"></span>Healthy</span></p>
+        <p class="kpi-sub">Sign-ups, activation, trial-to-paid, bookings</p>
+      </div>
+    </section>
+
+    <div class="ov-grid">
+    <div class="ov-main">
+    <section class="insight" aria-labelledby="insight-label">
+      <p class="label" id="insight-label">Most important insight this week</p>
+
+      <div class="headline">
+        <button type="button" class="headline-btn" id="churn-toggle" aria-expanded="true" aria-controls="churn-detail">
+          <span class="metric-name">Account churn rate</span>
+          <span class="value-row">
+            <span class="value">4.4%</span>
+            <span class="change bad"><span aria-hidden="true">▲</span> +38% <span class="vs">vs typical week (3.2%)</span></span>
+            <span class="health bad"><span class="dot" aria-hidden="true"></span>Needs attention</span>
+          </span>
+          <span class="drill-hint" id="churn-hint"></span>
+        </button>
+        <p class="takeaway">More accounts are cancelling than usual, and almost all of the increase is coming from Starter-plan customers.</p>
+        <a class="detail-link" href="#/churn">Open churn detail →</a>
+      </div>
+
+      <figure class="trend" id="churn-detail">
+        <div class="trend-head">
+          <figcaption class="trend-title" id="trend-title">Weekly churn rate, last 5 weeks <span class="synthetic">Synthetic data</span></figcaption>
+          <div class="range" role="group" aria-label="Time range" hidden>
+            <button type="button" data-weeks="5" aria-pressed="true">5 weeks</button>
+            <button type="button" data-weeks="12" aria-pressed="false">12 weeks</button>
+            <button type="button" data-weeks="26" aria-pressed="false">26 weeks</button>
+          </div>
+        </div>
+        <p class="trend-summary" id="trend-summary"></p>
+        <svg class="trend-chart" viewBox="0 0 340 186" role="img" aria-labelledby="trend-svg-title trend-svg-desc">
+          <title id="trend-svg-title">Weekly account churn rate, last 5 weeks, with health zones</title>
+          <desc id="trend-svg-desc">Week of Sep 28: 3.1%. Oct 5: 3.3%. Oct 12: 3.2%. Oct 19: 3.2%. All four are in the Healthy zone, below 3.5%. Oct 26, this week: 4.4%, in the Needs attention zone, above 4.0%. Typical week: 3.2%.</desc>
+          <g class="zones">
+            <rect class="zone-bad" x="34" y="24" width="296" height="50.4"/>
+            <rect class="zone-caution" x="34" y="74.4" width="296" height="25.2"/>
+            <rect class="zone-good" x="34" y="99.6" width="296" height="50.4"/>
+          </g>
+          <g class="zone-labels">
+            <text class="bad" x="38" y="35">Needs attention (above 4.0%)</text>
+            <text class="caution" x="38" y="90.5">Caution (3.5–4.0%)</text>
+            <text class="good" x="38" y="146">Healthy (below 3.5%)</text>
+          </g>
+          <g class="grid">
+            <line x1="34" x2="330" y1="124.8" y2="124.8"/>
+            <line x1="34" x2="330" y1="74.4" y2="74.4"/>
+            <line x1="34" x2="330" y1="24" y2="24"/>
+          </g>
+          <g class="axis">
+            <text x="28" y="128.8" text-anchor="end">3%</text>
+            <text x="28" y="78.4" text-anchor="end">4%</text>
+            <text x="28" y="28" text-anchor="end">5%</text>
+            <text x="48" y="174" text-anchor="middle">Sep 28</text>
+            <text x="112" y="174" text-anchor="middle">Oct 5</text>
+            <text x="176" y="174" text-anchor="middle">Oct 12</text>
+            <text x="240" y="174" text-anchor="middle">Oct 19</text>
+            <text x="304" y="174" text-anchor="middle">Oct 26</text>
+          </g>
+          <line class="benchmark" x1="34" x2="330" y1="114.72" y2="114.72"/>
+          <text class="benchmark-label" x="330" y="140" text-anchor="end">Typical week: 3.2%</text>
+          <polyline class="trend-line" points="48,119.76 112,109.68 176,114.72 240,114.72 304,54.24"/>
+          <g class="points">
+            <circle cx="48" cy="119.76" r="4"><title>Week of Sep 28: 3.1% (Healthy)</title></circle>
+            <circle cx="112" cy="109.68" r="4"><title>Week of Oct 5: 3.3% (Healthy)</title></circle>
+            <circle cx="176" cy="114.72" r="4"><title>Week of Oct 12: 3.2% (Healthy)</title></circle>
+            <circle cx="240" cy="114.72" r="4"><title>Week of Oct 19: 3.2% (Healthy)</title></circle>
+            <circle class="now" cx="304" cy="54.24" r="6"><title>Week of Oct 26 (this week): 4.4% (Needs attention)</title></circle>
+          </g>
+          <text class="now-label" x="292" y="50" text-anchor="end">4.4% this week</text>
+        </svg>
+        <p class="readout" id="trend-readout" aria-live="polite" hidden></p>
+        <p class="trend-note">+38% is a relative change: (4.4% − 3.2%) ÷ 3.2% = 37.5%, rounded to the nearest whole percent. In absolute terms, churn is up 1.2 percentage points. "Typical week" is the average of the four weeks before this one.</p>
+      </figure>
+
+      <div class="action">
+        <p class="label">Recommended next action</p>
+        <p class="action-text">Reach out to at-risk Starter-plan accounts this week.</p>
+        <dl class="plan">
+          <dt>Who</dt><dd>Customer Success lead and account managers</dd>
+          <dt>What</dt><dd>Identify Starter-plan accounts showing cancellation risk and prioritize outreach</dd>
+          <dt>When</dt><dd>Begin outreach this week</dd>
+          <dt>Why</dt><dd>The increase in churn is concentrated among Starter-plan customers</dd>
+          <dt>Measure</dt><dd>Track accounts contacted, responses, and cancellations that follow</dd>
+        </dl>
+        <p class="caveat">Outreach hasn't been shown to reduce churn here. Treat this as a test and judge it by the measures above.</p>
+      </div>
+    </section>
+
+    <nav class="nav-cards" aria-label="Where to go next">
+      <p class="label">Where to go next</p>
+      <a class="nav-card" href="#/churn">
+        <span class="nav-card-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><polyline points="1.5,12 5.5,8 8.5,10 14.5,3.5"/><line x1="1.5" y1="14.5" x2="14.5" y2="14.5"/></svg></span>
+        <span class="nav-card-title">Churn detail</span>
+        <span class="nav-card-text">See churn over time and which subscription plans are driving the increase.</span>
+        <span class="nav-card-go">Open churn detail →</span>
+      </a>
+      <a class="nav-card primary" href="#/actions/SIG-1">
+        <span class="nav-card-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"/><polyline points="5,8.2 7.2,10.3 11,6"/></svg></span>
+        <span class="nav-card-title">Recommended actions</span>
+        <span class="nav-card-text">3 actions, starting with outreach to at-risk Starter-plan accounts.</span>
+        <span class="nav-card-go">View recommended actions →</span>
+      </a>
+    </nav>
+    </div>
+    <section class="supporting ov-side" aria-labelledby="rest-label">
+      <div class="supporting-head">
+        <h2 class="supporting-title" id="rest-label">Supporting metrics</h2>
+        <p class="supporting-sub">No unusual changes this week. All 4 are <span class="health good"><span class="dot" aria-hidden="true"></span>Healthy</span></p>
+      </div>
+      <div class="tiles">
+        <div class="tile">
+          <p class="tile-name">Sign-ups</p>
+          <div class="tile-head">
+            <p class="tile-value">2,912</p>
+            <span class="health good"><span class="dot" aria-hidden="true"></span>Healthy</span>
+          </div>
+          <p class="tile-change">−0.4% · normal range</p>
+          <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none" role="img">
+            <title>Sign-ups, last 5 weeks: 2,880, 2,941, 2,905, 2,924, 2,912. Healthy. Caution below 2,800.</title>
+            <line class="spark-threshold" x1="0" x2="100" y1="17.86" y2="17.86"/>
+            <polyline points="2,15.11 26,13.02 50,14.25 74,13.60 98,14.01"/>
+            <path class="spark-end" d="M98 14.01h0"/>
+          </svg>
+          <p class="tile-trend">Stable · dashed line: Caution below 2,800</p>
+        </div>
+        <div class="tile">
+          <p class="tile-name">Activation rate</p>
+          <div class="tile-head">
+            <p class="tile-value">42.1%</p>
+            <span class="health good"><span class="dot" aria-hidden="true"></span>Healthy</span>
+          </div>
+          <p class="tile-change">+0.3% · normal range</p>
+          <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none" role="img">
+            <title>Activation rate, last 5 weeks: 41.8%, 42.2%, 41.9%, 42.0%, 42.1%. Healthy. Caution below 40.0%.</title>
+            <line class="spark-threshold" x1="0" x2="100" y1="18.75" y2="18.75"/>
+            <polyline points="2,14.46 26,13.51 50,14.22 74,14.06 98,13.75"/>
+            <path class="spark-end" d="M98 13.75h0"/>
+          </svg>
+          <p class="tile-trend">Stable · dashed line: Caution below 40.0%</p>
+        </div>
+        <div class="tile">
+          <p class="tile-name">Trial-to-paid</p>
+          <div class="tile-head">
+            <p class="tile-value">14.0%</p>
+            <span class="health good"><span class="dot" aria-hidden="true"></span>Healthy</span>
+          </div>
+          <p class="tile-change">−0.6% · normal range</p>
+          <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none" role="img">
+            <title>Trial-to-paid, last 5 weeks: 14.2%, 13.9%, 14.1%, 14.1%, 14.0%. Healthy. Caution below 13.0%.</title>
+            <line class="spark-threshold" x1="0" x2="100" y1="21.52" y2="21.52"/>
+            <polyline points="2,12.98 26,15.12 50,13.69 74,13.80 98,14.41"/>
+            <path class="spark-end" d="M98 14.41h0"/>
+          </svg>
+          <p class="tile-trend">Stable · dashed line: Caution below 13.0%</p>
+        </div>
+        <div class="tile">
+          <p class="tile-name">New bookings</p>
+          <div class="tile-head">
+            <p class="tile-value">$111,200</p>
+            <span class="health good"><span class="dot" aria-hidden="true"></span>Healthy</span>
+          </div>
+          <p class="tile-change">+1.1% · normal range</p>
+          <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none" role="img">
+            <title>New bookings, last 5 weeks: $108,900, $112,400, $109,700, $110,000, $111,200. Healthy. Caution below $100,000.</title>
+            <line class="spark-threshold" x1="0" x2="100" y1="23.45" y2="23.45"/>
+            <polyline points="2,15.39 26,12.23 50,14.67 74,14.40 98,13.31"/>
+            <path class="spark-end" d="M98 13.31h0"/>
+          </svg>
+          <p class="tile-trend">Stable · dashed line: Caution below $100,000</p>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <div class="explainers">
+      <details class="glossary">
+        <summary>What do these metrics mean?</summary>
+        <dl>
+          <dt>Churn rate</dt><dd>The percentage of existing customer accounts that cancel during a given period.</dd>
+          <dt>Activation rate</dt><dd>The percentage of new users or accounts that complete a defined first-value action.</dd>
+          <dt>Trial-to-paid conversion</dt><dd>The percentage of trial accounts that become paying customers.</dd>
+          <dt>New bookings</dt><dd>The value of newly contracted business during the period.</dd>
+        </dl>
+      </details>
+
+      <details class="glossary ratings">
+        <summary>How are health ratings decided?</summary>
+        <ul class="legend">
+          <li><span class="health good"><span class="dot" aria-hidden="true"></span>Healthy</span> Green: within the expected range.</li>
+          <li><span class="health caution"><span class="dot" aria-hidden="true"></span>Caution</span> Amber: near or slightly outside the expected range. Worth monitoring.</li>
+          <li><span class="health bad"><span class="dot" aria-hidden="true"></span>Needs attention</span> Red: well outside the expected range. Act on it.</li>
+        </ul>
+        <p class="ratings-note">Thresholds are illustrative, based on synthetic product assumptions, not verified industry benchmarks. Ratings use the value as shown on the dashboard.</p>
+        <dl>
+          <dt>Churn rate <span class="direction">(lower is better)</span></dt>
+          <dd>Healthy: below 3.5% · Caution: 3.5% to 4.0%, including exactly 3.5% and exactly 4.0% · Needs attention: above 4.0%</dd>
+          <dt>Sign-ups <span class="direction">(higher is better)</span></dt>
+          <dd>Healthy: 2,800 or more · Caution: 2,600 to 2,799 · Needs attention: fewer than 2,600</dd>
+          <dt>Activation rate <span class="direction">(higher is better)</span></dt>
+          <dd>Healthy: 40.0% or higher · Caution: 37.0% or higher, but below 40.0% · Needs attention: below 37.0%</dd>
+          <dt>Trial-to-paid conversion <span class="direction">(higher is better)</span></dt>
+          <dd>Healthy: 13.0% or higher · Caution: 12.0% or higher, but below 13.0% · Needs attention: below 12.0%</dd>
+          <dt>New bookings <span class="direction">(higher is better)</span></dt>
+          <dd>Healthy: $100,000 or more · Caution: $90,000 or more, but below $100,000 · Needs attention: below $90,000</dd>
+        </dl>
+      </details>
+    </div>
+  </main>
+
+  <!-- V4 screen: Churn Detail (anchor for Recommended Actions) -->
+  <main class="wide" id="screen-churn" aria-labelledby="cd-title" hidden>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/overview">Overview</a> <span aria-hidden="true">›</span> <span aria-current="page">Churn Detail</span></nav>
+    <div class="report-head">
+      <div>
+        <h1 id="cd-title" class="page-title" tabindex="-1">Churn Detail</h1>
+        <p class="muted small">Account churn rate: share of active accounts that cancelled each week · Week of Oct 26 – Nov 1, 2026 <span class="synthetic">Synthetic data</span></p>
+      </div>
+      <span class="health bad"><span class="dot" aria-hidden="true"></span>Needs attention</span>
+    </div>
+
+    <div class="report-toolbar">
+      <div class="range" role="group" aria-label="Time range" id="cd-range">
+        <button type="button" data-weeks="5" aria-pressed="true">5 weeks</button>
+        <button type="button" data-weeks="12" aria-pressed="false">12 weeks</button>
+        <button type="button" data-weeks="26" aria-pressed="false">26 weeks</button>
+      </div>
+      <span class="toolbar-note">Compared with: typical week (average of the 4 weeks before this one)</span>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><p class="kpi-label">This week</p><p class="kpi-value bad">4.4%</p><p class="kpi-sub">Needs attention (above 4.0%)</p></div>
+      <div class="kpi"><p class="kpi-label">Typical week</p><p class="kpi-value">3.2%</p><p class="kpi-sub">Average of prior 4 weeks</p></div>
+      <div class="kpi"><p class="kpi-label">Change</p><p class="kpi-value bad">+1.2 pts</p><p class="kpi-sub">+38% relative (37.5%, rounded)</p></div>
+      <div class="kpi"><p class="kpi-label">Cancellations</p><p class="kpi-value" id="cd-cancels"></p><p class="kpi-sub" id="cd-cancels-sub"></p></div>
+    </div>
+
+    <section class="panel" aria-labelledby="cd-trend-title">
+      <div class="panel-head"><h2 id="cd-trend-title">Account Churn Trends by Plan</h2><span class="muted small">Weekly churn rate · Synthetic data</span></div>
+      <p class="cd-summary" id="cd-summary"></p>
+      <ul class="trend-legend" aria-label="Chart legend">
+        <li><span class="lg-line lg-all" aria-hidden="true"></span>All plans (weighted)</li>
+        <li><span class="lg-line" style="background:#FFC247" aria-hidden="true"></span>Starter</li>
+        <li><span class="lg-line" style="background:#FF8738" aria-hidden="true"></span>Pro</li>
+        <li><span class="lg-line" style="background:#29A8FF" aria-hidden="true"></span>Enterprise</li>
+      </ul>
+      <svg class="report-chart" id="cd-chart" viewBox="0 0 640 250" role="img" aria-labelledby="cd-chart-title cd-chart-desc"></svg>
+      <p class="readout" id="cd-readout"></p>
+      <p class="threshold-note" id="cd-data-note"></p>
+    </section>
+
+    <section class="panel calc-panel" id="cd-calc" aria-labelledby="cd-contrib-title" hidden>
+      <details class="calc">
+        <summary>How is this calculated?</summary>
+        <div class="calc-body" id="cd-calc-body"></div>
+      </details>
+      <h2 class="contrib-title" id="cd-contrib-title">How each plan contributes to overall churn</h2>
+      <div class="contrib" id="cd-contrib"></div>
+      <p class="contrib-legend" id="cd-contrib-legend"></p>
+    </section>
+
+    <section class="panel" id="cd-break-panel" aria-labelledby="cd-break-title">
+      <div class="panel-head"><h2 id="cd-break-title">Breakdown by plan</h2><span class="muted small">This week vs typical week</span></div>
+      <div id="cd-break-state"></div>
+      <div id="cd-break-body" hidden>
+      <p class="break-conclusion" id="cd-break-conclusion"></p>
+      <p class="threshold-note"><span class="illustrative">Illustrative thresholds</span> Colors use the overall churn thresholds for every plan: healthy below 3.5%, caution 3.5–4.0%, needs attention above 4.0%. They are not validated plan-specific benchmarks. Changes are rated by direction: a rise of more than 0.5 pts needs attention, a rise of 0.2–0.5 pts is caution, and flat or falling is healthy.</p>
+      <div>
+        <p class="chart-caption">Churn rate this week vs typical week <span class="muted">(white tick = typical)</span></p>
+        <div class="bars" id="cd-bars"></div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="cd-table"></table>
+      </div>
+      </div>
+    </section>
+
+    <section class="cta" id="cd-cta" aria-label="Next step" hidden>
+      <p id="cd-cta-text"></p>
+      <a class="btn" href="#/actions/SIG-1">See recommended actions (3) →</a>
+    </section>
+  </main>
+
+  <!-- V4 screen: Recommended Actions -->
+  <main class="wide" id="screen-actions" aria-labelledby="ac-title" hidden>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/overview">Overview</a> <span aria-hidden="true">›</span> <a href="#/churn">Churn Detail</a> <span aria-hidden="true">›</span> <span aria-current="page">Recommended Actions</span></nav>
+    <div class="report-head">
+      <div>
+        <h1 id="ac-title" class="page-title" tabindex="-1">Recommended Actions</h1>
+        <p class="muted small">Responding to this week's churn increase · 3 actions</p>
+      </div>
+    </div>
+    <p class="illustrative-note"><span class="illustrative">Illustrative data</span> Owners, statuses, timing and activity on this screen are examples that show how the workflow would look. They are not real assignments or deadlines.</p>
+    <div class="issues">
+      <nav class="issue-list" aria-label="Actions">
+        <div class="issue-list-head"><span>Actions</span><span id="ac-count"></span></div>
+        <ul id="ac-list"></ul>
+      </nav>
+      <article class="issue" id="ac-detail" aria-live="polite"></article>
+      <aside class="props" id="ac-props" aria-label="Action properties"></aside>
+    </div>
+  </main>
+
+  <footer>Signal V4 prototype. Demo with synthetic data. No real customer or company data is used.</footer>
+  </div>
+  </div>
+
+  <script>
+    // Churn drill-down: headline toggle, time-range filter, and hover/tap readout.
+    // Without JavaScript the page keeps the static 5-week chart above.
+    (function () {
+      // SYNTHETIC weekly churn rates (%), 26 weeks from the week of May 4 to the week of Oct 26, 2026. Not real data.
+      var values = [3.0, 3.2, 2.9, 3.1, 3.3, 3.0, 3.2, 3.4, 3.1, 2.9, 3.0, 3.2, 3.1, 3.3, 3.0, 3.2, 3.1, 2.9, 3.2, 3.0, 3.3,
+                    3.1, 3.3, 3.2, 3.2, 4.4];
+      var weeks = values.map(function (v, i) {
+        var d = new Date(2026, 4, 4 + i * 7);
+        return { label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), v: v };
+      });
+
+      var toggle = document.getElementById('churn-toggle');
+      var hint = document.getElementById('churn-hint');
+      var detail = document.getElementById('churn-detail');
+      var range = detail.querySelector('.range');
+      var title = document.getElementById('trend-title');
+      var summary = document.getElementById('trend-summary');
+      var svg = detail.querySelector('.trend-chart');
+      var readout = document.getElementById('trend-readout');
+      var defaultReadout = 'Point at or tap a week to see its value.';
+      var data, step;
+
+      function y(v) { return 150 - (v - 2.5) * 50.4; }
+      function x(i) { return 48 + i * step; }
+      function fmt(v) { return v.toFixed(1) + '%'; }
+      function health(v) { return v < 3.5 ? 'Healthy' : v <= 4.0 ? 'Caution' : 'Needs attention'; }
+
+      function render(n) {
+        data = weeks.slice(-n);
+        var last = data.length - 1;
+        step = 256 / last;
+        var every = n <= 5 ? 1 : n <= 12 ? 3 : 5;
+        var s = '<title id="trend-svg-title">Weekly account churn rate, last ' + n + ' weeks, with health zones. Synthetic data.</title>' +
+          '<desc id="trend-svg-desc">' + data.map(function (w, i) {
+            return 'Week of ' + w.label + (i === last ? ', this week' : '') + ': ' + fmt(w.v) + ', ' + health(w.v);
+          }).join('. ') + '. Typical week: 3.2%.</desc>' +
+          '<g class="zones"><rect class="zone-bad" x="34" y="24" width="296" height="50.4"/>' +
+          '<rect class="zone-caution" x="34" y="74.4" width="296" height="25.2"/>' +
+          '<rect class="zone-good" x="34" y="99.6" width="296" height="50.4"/></g>' +
+          '<g class="zone-labels"><text class="bad" x="38" y="35">Needs attention (above 4.0%)</text>' +
+          '<text class="caution" x="38" y="90.5">Caution (3.5–4.0%)</text>' +
+          '<text class="good" x="38" y="146">Healthy (below 3.5%)</text></g>' +
+          '<g class="grid"><line x1="34" x2="330" y1="124.8" y2="124.8"/><line x1="34" x2="330" y1="74.4" y2="74.4"/>' +
+          '<line x1="34" x2="330" y1="24" y2="24"/></g>' +
+          '<g class="axis"><text x="28" y="128.8" text-anchor="end">3%</text><text x="28" y="78.4" text-anchor="end">4%</text>' +
+          '<text x="28" y="28" text-anchor="end">5%</text>';
+        for (var i = last; i >= 0; i -= every) {
+          s += '<text x="' + x(i) + '" y="174" text-anchor="middle">' + data[i].label + '</text>';
+        }
+        s += '</g><line class="benchmark" x1="34" x2="330" y1="114.72" y2="114.72"/>' +
+          '<text class="benchmark-label" x="330" y="140" text-anchor="end">Typical week: 3.2%</text>' +
+          '<line class="guide" x1="0" x2="0" y1="24" y2="150" visibility="hidden"/>' +
+          '<polyline class="trend-line" points="' + data.map(function (w, i) { return x(i) + ',' + y(w.v); }).join(' ') + '"/>' +
+          '<g class="points' + (n > 12 ? ' dense' : '') + '">';
+        data.forEach(function (w, i) {
+          s += i === last
+            ? '<circle class="now" cx="' + x(i) + '" cy="' + y(w.v) + '" r="6"/>'
+            : '<circle cx="' + x(i) + '" cy="' + y(w.v) + '" r="' + (n > 12 ? 2.5 : 4) + '"/>';
+        });
+        s += '</g><circle class="focus" r="7" visibility="hidden"/>' +
+          '<text class="now-label" x="292" y="50" text-anchor="end">4.4% this week</text>' +
+          '<rect class="hit" x="34" y="24" width="296" height="150"/>';
+        svg.innerHTML = s;
+
+        var prev = data.slice(0, last);
+        var high = Math.max.apply(null, prev.map(function (w) { return w.v; }));
+        var highWeek = prev.filter(function (w) { return w.v === high; }).pop();
+        title.innerHTML = 'Weekly churn rate, last ' + n + ' weeks <span class="synthetic">Synthetic data</span>';
+        summary.textContent = 'This week (4.4%) is the highest in the last ' + n + ' weeks. Previous high: ' +
+          fmt(high) + ', week of ' + highWeek.label + '.';
+        readout.textContent = defaultReadout;
+      }
+
+      function showWeek(evt) {
+        var pt = svg.createSVGPoint();
+        pt.x = evt.clientX; pt.y = evt.clientY;
+        var px = pt.matrixTransform(svg.getScreenCTM().inverse()).x;
+        var i = Math.max(0, Math.min(data.length - 1, Math.round((px - 48) / step)));
+        var w = data[i], guide = svg.querySelector('.guide'), focus = svg.querySelector('.focus');
+        guide.setAttribute('x1', x(i)); guide.setAttribute('x2', x(i)); guide.setAttribute('visibility', 'visible');
+        focus.setAttribute('cx', x(i)); focus.setAttribute('cy', y(w.v)); focus.setAttribute('visibility', 'visible');
+        readout.textContent = 'Week of ' + w.label + (i === data.length - 1 ? ' (this week)' : '') + ': ' +
+          fmt(w.v) + ' · ' + health(w.v);
+      }
+
+      function clearWeek(evt) {
+        if (evt.pointerType === 'touch') return;
+        svg.querySelector('.guide').setAttribute('visibility', 'hidden');
+        svg.querySelector('.focus').setAttribute('visibility', 'hidden');
+        readout.textContent = defaultReadout;
+      }
+
+      svg.addEventListener('pointermove', showWeek);
+      svg.addEventListener('pointerdown', showWeek);
+      svg.addEventListener('pointerleave', clearWeek);
+
+      range.addEventListener('click', function (evt) {
+        var btn = evt.target.closest('button');
+        if (!btn) return;
+        range.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); });
+        render(Number(btn.dataset.weeks));
+      });
+
+      toggle.addEventListener('click', function () {
+        var open = detail.hidden;
+        detail.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+        hint.textContent = open ? 'Hide trend ▴' : 'View trend ▾';
+      });
+
+      hint.textContent = 'Hide trend ▴';
+      range.hidden = false;
+      readout.hidden = false;
+      render(5);
+    })();
+  </script>
+
+  <script>
+    // V4: screen navigation, Churn Detail screen and Recommended Actions screen.
+    (function () {
+      // ---------- SYNTHETIC churn data (not real) ----------
+      // Weekly churn (%) for all plans, 26 weeks from the week of May 4 to the week of Oct 26, 2026 (same as Signal V2).
+      var OVERALL = [3.0, 3.2, 2.9, 3.1, 3.3, 3.0, 3.2, 3.4, 3.1, 2.9, 3.0, 3.2, 3.1, 3.3, 3.0, 3.2, 3.1, 2.9, 3.2, 3.0, 3.3,
+                     3.1, 3.3, 3.2, 3.2, 4.4];
+      var WEEKS = OVERALL.map(function (v, i) {
+        return new Date(2026, 4, 4 + i * 7).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+      // Cancellations per plan for the last 5 weeks (Sep 28 to Oct 26). Weekly totals (62, 66, 64, 64, 87 of 2,000 accounts)
+      // match the overall line: 3.1%, 3.3%, 3.2%, 3.2%, 4.4%.
+      var PLANS = [
+        { name: 'Starter', accounts: 900, color: '#FFC247', cancels: [44, 47, 45, 45, 68] },
+        { name: 'Pro', accounts: 700, color: '#FF8738', cancels: [15, 16, 16, 15, 16] },
+        { name: 'Enterprise', accounts: 400, color: '#29A8FF', cancels: [3, 3, 3, 4, 3] }
+      ];
+      var PLAN_WEEKS = WEEKS.slice(-5);
+
+      // ---------- ILLUSTRATIVE actions (example owners, statuses, timing and activity; not real assignments) ----------
+      var ACTIONS = [
+        { id: 'SIG-1', primary: true, title: 'Reach out to at-risk Starter-plan accounts', priority: 'Urgent',
+          owner: 'Customer Success lead', initials: 'CS', timing: 'Start in the week after the review', labels: ['Churn', 'Starter plan'],
+          desc: 'Customer Success and account managers contact the Starter-plan accounts most likely to cancel, starting with the highest-risk accounts from SIG-2.',
+          why: 'Starter-plan churn rose to 7.6% this week (typical 5.0%) and accounts for 99% of the overall increase.',
+          measure: 'Track accounts contacted, responses, and cancellations that follow.',
+          steps: ['Get the at-risk Starter account list (SIG-2)', 'Agree the outreach message', 'Contact accounts, highest risk first', 'Log responses and outcomes (SIG-3)'],
+          caveat: true, dependsOn: 'SIG-2', blocks: 'SIG-3' },
+        { id: 'SIG-2', title: 'Identify Starter-plan accounts showing cancellation risk', priority: 'High',
+          owner: 'CS Operations', initials: 'CO', timing: 'Before outreach starts', labels: ['Churn', 'Starter plan', 'Data'],
+          desc: 'Build a ranked list of Starter-plan accounts showing signs they may cancel, so outreach starts with the accounts most at risk.',
+          why: 'Outreach (SIG-1) needs a focused list. Contacting every Starter account would spread the team too thin.',
+          measure: 'A ranked list is ready and shared with Customer Success before outreach begins.',
+          steps: ['Agree which signals count as cancellation risk', 'Pull the Starter-plan account list', 'Rank accounts by risk', 'Share the list with Customer Success'],
+          blocks: 'SIG-1' },
+        { id: 'SIG-3', title: 'Track outreach results: contacts, responses, cancellations', priority: 'Medium',
+          owner: 'Growth PM', initials: 'GP', timing: 'Review about 2 weeks after outreach starts', labels: ['Churn', 'Measurement'],
+          desc: 'Measure what happens after outreach and report back at the next metrics review.',
+          why: 'Outreach hasn\'t been shown to reduce churn here, so the results decide whether to keep doing it.',
+          measure: 'Starter-plan churn in the weeks after outreach, compared with the 5.0% typical week and with accounts not yet contacted.',
+          steps: ['Set up a simple tracking sheet', 'Record contacts and responses each week', 'Compare cancellations with the typical week', 'Report at the next metrics review'],
+          dependsOn: 'SIG-1' }
+      ];
+
+      // ---------- Helpers ----------
+      function round1(x) { return (Math.round(x * 10 + 1e-9) / 10).toFixed(1); }
+      function pct(count, accounts) { return count / accounts * 100; }
+      function sum(a) { return a.reduce(function (s, x) { return s + x; }, 0); }
+      function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+      function signed(x, digits) { var s = Math.abs(x).toFixed(digits); return Number(s) === 0 ? s : (x < 0 ? '−' : '+') + s; }
+      function health(v) { return v < 3.5 ? 'Healthy' : v <= 4.0 ? 'Caution' : 'Needs attention'; }
+
+      var TOTAL_ACCOUNTS = sum(PLANS.map(function (p) { return p.accounts; }));
+      var planStats = PLANS.map(function (p) {
+        var now = p.cancels[4], typical = sum(p.cancels.slice(0, 4)) / 4;
+        return { plan: p, now: now, typical: typical, rateNow: pct(now, p.accounts), rateTypical: pct(typical, p.accounts) };
+      });
+      var totalNow = sum(planStats.map(function (s) { return s.now; }));
+      var totalTypical = sum(planStats.map(function (s) { return s.typical; }));
+      var extra = totalNow - totalTypical;
+
+      var starter = planStats[0];
+      var starterShare = Math.round((starter.now - starter.typical) / extra * 100);
+
+      // ---------- Overview: KPI cards that come from the plan figures ----------
+      // Each KPI gets a status from its own illustrative thresholds and a green/yellow/red scale with a marker.
+      function toneOf(status) { return status === 'Healthy' ? 'good' : status === 'Caution' ? 'caution' : 'bad'; }
+      function badgeHTML(status) { return '<span class="health ' + toneOf(status) + '"><span class="dot" aria-hidden="true"></span>' + status + '</span>'; }
+      // o: min/max of the scale, caution/bad thresholds, current value, fmt for numbers, status, and plain-language text.
+      function kpiScaleHTML(o) {
+        function pos(v) { return Math.max(0, Math.min(100, (v - o.min) / (o.max - o.min) * 100)); }
+        var c = pos(o.caution), b = pos(o.bad), v = pos(o.value);
+        return '<div class="scale" role="img" aria-label="' + esc(o.aria) + '">' +
+          '<div class="scale-bar"><span class="sc-good" style="width:' + c + '%"></span><span class="sc-caution" style="width:' + (b - c) + '%"></span>' +
+          '<span class="sc-bad" style="width:' + (100 - b) + '%"></span><span class="scale-marker" style="left:' + v + '%"></span></div>' +
+          '<div class="scale-ticks" aria-hidden="true"><span style="left:' + ((c + b) / 2) + '%">' + o.fmt(o.caution) + '–' + o.fmt(o.bad) + '</span></div></div>' +
+          '<p class="scale-label" aria-hidden="true">' + o.label + '</p>';
+      }
+
+      // Account churn rate: the existing overall thresholds.
+      var churnNow = Number(round1(pct(totalNow, TOTAL_ACCOUNTS)));
+      var churnStatus = health(churnNow);
+      document.getElementById('ov-scale-churn').innerHTML = kpiScaleHTML({
+        min: 2.5, max: 5.0, caution: 3.5, bad: 4.0, value: churnNow, fmt: function (x) { return x.toFixed(1) + '%'; },
+        label: churnNow + '% is ' + (churnStatus === 'Healthy' ? 'below 3.5%' : churnStatus === 'Caution' ? 'within 3.5–4.0%' : 'above 4.0%'),
+        aria: 'Health scale for account churn rate: healthy below 3.5%, caution 3.5 to 4.0%, needs attention above 4.0%. Current ' + churnNow + '%: ' + churnStatus + '.'
+      });
+
+      // Cancellations: the overall thresholds converted to counts at the current number of starting accounts.
+      var cancelCaution = Math.round(0.035 * TOTAL_ACCOUNTS), cancelBad = Math.round(0.040 * TOTAL_ACCOUNTS);
+      var typicalCancels = Math.round(totalTypical), moreCancels = totalNow - typicalCancels;
+      var cancelStatus = totalNow < cancelCaution ? 'Healthy' : totalNow <= cancelBad ? 'Caution' : 'Needs attention';
+      document.getElementById('ov-cancels').textContent = totalNow;
+      document.getElementById('ov-cancels-badge').innerHTML = badgeHTML(cancelStatus);
+      document.getElementById('ov-cancels-sub').innerHTML = 'Typical week: ' + typicalCancels + ' cancellations<br>' +
+        (moreCancels >= 0 ? moreCancels + ' more than typical · ≈' : Math.abs(moreCancels) + ' fewer than typical · ≈') +
+        Math.round(Math.abs(moreCancels) / typicalCancels * 100) + '% ' + (moreCancels >= 0 ? 'above' : 'below') + ' typical';
+      document.getElementById('ov-kpi-cancels').classList.toggle('risk', cancelStatus === 'Needs attention');
+      document.getElementById('ov-scale-cancels').innerHTML = kpiScaleHTML({
+        min: 50, max: 100, caution: cancelCaution, bad: cancelBad, value: totalNow, fmt: function (x) { return String(x); },
+        label: totalNow + ' is ' + (cancelStatus === 'Healthy' ? 'below ' + cancelCaution : cancelStatus === 'Caution' ? 'within ' + cancelCaution + '–' + cancelBad : 'above ' + cancelBad),
+        aria: 'Health scale for cancellations this week: healthy below ' + cancelCaution + ', caution ' + cancelCaution + ' to ' + cancelBad + ', needs attention above ' +
+          cancelBad + '. Current ' + totalNow + ': ' + cancelStatus + '.'
+      });
+
+      // Starter-plan churn: compared with Starter's own typical week, using the Churn Detail change rule.
+      var starterNow = Number(round1(starter.rateNow)), starterTypical = Number(round1(starter.rateTypical));
+      var starterRise = Math.round((starterNow - starterTypical) * 10) / 10;
+      var starterStatus = starterRise > 0.5 ? 'Needs attention' : starterRise >= 0.2 ? 'Caution' : 'Healthy';
+      var starterCaution = starterTypical + 0.2, starterBad = starterTypical + 0.5;
+      document.getElementById('ov-starter').textContent = round1(starter.rateNow) + '%';
+      document.getElementById('ov-starter-badge').innerHTML = badgeHTML(starterStatus);
+      document.getElementById('ov-starter-sub').textContent = 'Typical ' + round1(starter.rateTypical) + '% · drives ' + starterShare + '% of the increase';
+      document.getElementById('ov-kpi-starter').classList.toggle('risk', starterStatus === 'Needs attention');
+      document.getElementById('ov-scale-starter').innerHTML = kpiScaleHTML({
+        min: starterTypical - 1, max: starterTypical + 3, caution: starterCaution, bad: starterBad, value: starterNow,
+        fmt: function (x) { return x.toFixed(1) + '%'; },
+        label: signed(starterRise, 1) + ' pts vs typical ' + starterTypical.toFixed(1) + '%',
+        aria: 'Health scale for Starter-plan churn compared with its typical ' + starterTypical.toFixed(1) + '%: healthy below ' + starterCaution.toFixed(1) +
+          '%, caution ' + starterCaution.toFixed(1) + ' to ' + starterBad.toFixed(1) + '%, needs attention above ' + starterBad.toFixed(1) + '%. Current ' + starterNow + '%: ' + starterStatus + '.'
+      });
+
+      // ---------- Churn Detail: Account Churn Trends by Plan (four lines) ----------
+      var chart = document.getElementById('cd-chart');
+      var summary = document.getElementById('cd-summary');
+      var trendReadout = document.getElementById('cd-readout');
+      var dataNote = document.getElementById('cd-data-note');
+      var DEFAULT_READOUT = 'Point at or tap a week to see each plan\'s churn.';
+      var PLAN_START = OVERALL.length - 5; // plan-level counts exist only from the week of Sep 28
+      var currentWeeks = 5, breakdownReady = false, chartWeeks = [], chartStep = 0;
+      function cy(v) { return 210 - v * 24.25; } // 0% at the bottom, 8% at the top
+      function cx(i) { return 56 + i * chartStep; }
+
+
+      // All plans for one week. Where plan counts exist, it is weighted by accounts: total cancellations ÷ total
+      // starting accounts. Earlier weeks only have the stored overall rate, with no counts behind it.
+      function weekPoint(idx) {
+        var k = idx - PLAN_START;
+        if (k >= 0 && breakdownReady) {
+          var cancels = sum(PLANS.map(function (p) { return p.cancels[k]; }));
+          return { label: WEEKS[idx], all: pct(cancels, TOTAL_ACCOUNTS), fromCounts: true,
+            plans: PLANS.map(function (p) { return pct(p.cancels[k], p.accounts); }) };
+        }
+        return { label: WEEKS[idx], all: OVERALL[idx], fromCounts: false, plans: null };
+      }
+
+      function weekText(w, i) {
+        var text = 'Week of ' + w.label + (i === chartWeeks.length - 1 ? ' (this week)' : '') + ': All plans ' + round1(w.all) + '% (' + health(Number(round1(w.all))) + ')';
+        if (w.plans) return text + ' · ' + PLANS.map(function (p, j) { return p.name + ' ' + round1(w.plans[j]) + '%'; }).join(' · ');
+        return text + (breakdownReady ? ' · plan data not available for this week' : '');
+      }
+
+      // Same readout as weekText, with each series in its line color and the status in its health color.
+      function weekHTML(w, i) {
+        var status = health(Number(round1(w.all)));
+        var tone = status === 'Healthy' ? 'good' : status === 'Caution' ? 'caution' : 'bad';
+        var sep = '<span class="ro-sep"> · </span>';
+        var html = 'Week of ' + w.label + (i === chartWeeks.length - 1 ? ' (this week)' : '') + ': ' +
+          '<span style="color:#FF525F">All plans ' + round1(w.all) + '%</span> <span class="ro-' + tone + '">(' + status + ')</span>';
+        if (w.plans) {
+          return html + PLANS.map(function (p, j) {
+            return sep + '<span style="color:' + p.color + '">' + p.name + ' ' + round1(w.plans[j]) + '%</span>';
+          }).join('');
+        }
+        return html + (breakdownReady ? sep + '<span class="ro-sep">plan data not available for this week</span>' : '');
+      }
+
+      // The chart is drawn at its on-screen width so its text stays at its real size on any screen.
+      function renderMain(n) {
+        currentWeeks = n;
+        var W = Math.max(320, Math.round(chart.getBoundingClientRect().width) || 640);
+        chart.setAttribute('viewBox', '0 0 ' + W + ' 250');
+        var R = W - 64, ZR = W - 20; // R: last week's x; the space to its right holds the latest-value label
+        chartWeeks = [];
+        for (var idx = OVERALL.length - n; idx < OVERALL.length; idx++) chartWeeks.push(weekPoint(idx));
+        var last = chartWeeks.length - 1;
+        chartStep = (R - 56) / last;
+        var every = n <= 5 ? 1 : n <= 12 ? 3 : 5;
+        var s = '<title id="cd-chart-title">Account churn trends by plan, last ' + n + ' weeks. Synthetic data.</title>' +
+          '<desc id="cd-chart-desc">' + chartWeeks.map(weekText).join('. ') + '. Typical week, all plans: 3.2%.</desc>' +
+          '<rect class="zone-bad" x="40" y="' + cy(8) + '" width="' + (ZR - 40) + '" height="' + (cy(4) - cy(8)) + '"/>' +
+          '<rect class="zone-caution" x="40" y="' + cy(4) + '" width="' + (ZR - 40) + '" height="' + (cy(3.5) - cy(4)) + '"/>' +
+          '<rect class="zone-good" x="40" y="' + cy(3.5) + '" width="' + (ZR - 40) + '" height="' + (cy(0) - cy(3.5)) + '"/>' +
+          '<g class="zone-labels"><text class="bad" x="46" y="' + (cy(8) + 13) + '">Needs attention (above 4.0%)</text>' +
+          '<text class="good" x="46" y="' + (cy(0) - 6) + '">Healthy (below 3.5%)</text></g>' +
+          '<g class="grid">' + [2, 4, 6, 8].map(function (t) { return '<line x1="40" x2="' + ZR + '" y1="' + cy(t) + '" y2="' + cy(t) + '"/>'; }).join('') + '</g>' +
+          [0, 2, 4, 6, 8].map(function (t) { return '<text x="34" y="' + (cy(t) + 4) + '" text-anchor="end">' + t + '%</text>'; }).join('');
+        for (var i = last; i >= 0; i -= every) {
+          s += '<text x="' + cx(i) + '" y="232" text-anchor="middle">' + chartWeeks[i].label + '</text>';
+        }
+        s += '<line class="benchmark" x1="40" x2="' + ZR + '" y1="' + cy(3.2) + '" y2="' + cy(3.2) + '"/>' +
+          '<text class="benchmark-label" x="' + ZR + '" y="' + (cy(3.2) + 16) + '" text-anchor="end">Typical week: 3.2%</text>';
+        // Plan lines first, so All plans draws on top of them.
+        PLANS.forEach(function (p, j) {
+          var pts = [];
+          chartWeeks.forEach(function (w, i) { if (w.plans) pts.push(cx(i) + ',' + cy(w.plans[j])); });
+          if (pts.length) s += '<polyline class="pl-line" stroke="' + p.color + '" points="' + pts.join(' ') + '"/>';
+        });
+        s += '<polyline class="all-line" points="' + chartWeeks.map(function (w, i) { return cx(i) + ',' + cy(w.all); }).join(' ') + '"/>';
+        s += '<text class="now-value" x="' + (cx(last) + 12) + '" y="' + (cy(chartWeeks[last].all) + 6) + '">' + round1(chartWeeks[last].all) + '%</text>' +
+          '<line class="guide" x1="0" x2="0" y1="' + cy(8) + '" y2="' + cy(0) + '" visibility="hidden"/>' +
+          '<rect class="hit" x="40" y="' + cy(8) + '" width="' + (ZR - 40) + '" height="' + (cy(0) - cy(8)) + '" fill="transparent"/>';
+        chart.innerHTML = s;
+        trendReadout.textContent = DEFAULT_READOUT;
+
+        var vals = OVERALL.slice(-n), prev = vals.slice(0, -1), high = Math.max.apply(null, prev);
+        summary.textContent = 'All plans churn this week (4.4%) is the highest in the last ' + n + ' weeks. Previous high: ' +
+          high.toFixed(1) + '%, week of ' + WEEKS.slice(-n)[prev.lastIndexOf(high)] + '.';
+        dataNote.innerHTML = '<span class="illustrative">Illustrative thresholds</span> Zones: healthy below 3.5%, caution 3.5–4.0%, needs attention above 4.0%. ' +
+          'All plans = total cancellations ÷ 2,000 starting accounts each week. ' +
+          (!breakdownReady ? 'Plan lines appear once the plan data has loaded.'
+            : n > 5 ? 'Plan-level data in this synthetic dataset starts the week of Sep 28, so plan lines cover only the last 5 weeks; earlier All plans values are stored overall rates without account counts.'
+            : '');
+      }
+
+      function showTrendWeek(evt) {
+        if (!chartWeeks.length) return;
+        var pt = chart.createSVGPoint();
+        pt.x = evt.clientX; pt.y = evt.clientY;
+        var x = pt.matrixTransform(chart.getScreenCTM().inverse()).x;
+        var i = Math.max(0, Math.min(chartWeeks.length - 1, Math.round((x - 56) / chartStep)));
+        var guide = chart.querySelector('.guide');
+        guide.setAttribute('x1', cx(i)); guide.setAttribute('x2', cx(i)); guide.setAttribute('visibility', 'visible');
+        trendReadout.innerHTML = weekHTML(chartWeeks[i], i);
+      }
+      chart.addEventListener('pointermove', showTrendWeek);
+      chart.addEventListener('pointerdown', showTrendWeek);
+      chart.addEventListener('pointerleave', function (evt) {
+        if (evt.pointerType === 'touch') return;
+        chart.querySelector('.guide').setAttribute('visibility', 'hidden');
+        trendReadout.textContent = DEFAULT_READOUT;
+      });
+      var range = document.getElementById('cd-range');
+      range.addEventListener('click', function (evt) {
+        var btn = evt.target.closest('button');
+        if (!btn) return;
+        range.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); });
+        renderMain(Number(btn.dataset.weeks));
+        loadBreakdown(Number(btn.dataset.weeks));
+      });
+      renderMain(5);
+
+      // ---------- Churn Detail: contribution donut (a rounded rectangle drawn at its on-screen width) ----------
+      var donutContribs = null, donutTotal = 0;
+      function renderDonut() {
+        var svg = document.getElementById('cd-donut');
+        if (!svg || !donutContribs) return;
+        var W = Math.max(280, Math.round(svg.getBoundingClientRect().width) || 600), H = 120, sw = 14, r = 30;
+        var x0 = sw / 2, y0 = sw / 2, x1 = W - sw / 2, y1 = H - sw / 2;
+        // Clockwise from the top centre; pathLength 100 lets each segment's dash length be its share of the total.
+        var d = 'M' + (W / 2) + ',' + y0 + ' H' + (x1 - r) + ' A' + r + ',' + r + ' 0 0 1 ' + x1 + ',' + (y0 + r) + ' V' + (y1 - r) +
+          ' A' + r + ',' + r + ' 0 0 1 ' + (x1 - r) + ',' + y1 + ' H' + (x0 + r) + ' A' + r + ',' + r + ' 0 0 1 ' + x0 + ',' + (y1 - r) +
+          ' V' + (y0 + r) + ' A' + r + ',' + r + ' 0 0 1 ' + (x0 + r) + ',' + y0 + ' Z';
+        // Each segment runs a hair past its end, under the next segment, so neighbours meet with no visible seam.
+        var overlap = 0.25, start = 0;
+        var s = '<path class="donut-track" d="' + d + '" pathLength="100"/>';
+        donutContribs.forEach(function (c) {
+          var share = c.pts / donutTotal * 100, len = share + overlap;
+          s += '<path class="donut-seg" d="' + d + '" pathLength="100" stroke="' + c.st.plan.color + '" stroke-dasharray="' + len + ' ' + (100 - len) +
+            '" stroke-dashoffset="' + (-start) + '"><title>' + c.st.plan.name + ': ' + c.pts.toFixed(2) + '% pts of overall churn</title></path>';
+          start += share;
+        });
+        svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+        svg.innerHTML = s;
+      }
+
+      // ---------- Churn Detail: plan breakdown (shown once the breakdown data has loaded) ----------
+      function renderBreakdown() {
+        document.getElementById('cd-cancels').textContent = totalNow;
+        document.getElementById('cd-cancels-sub').textContent = 'of ' + TOTAL_ACCOUNTS.toLocaleString('en-US') + ' accounts · typical ' + Math.round(totalTypical);
+        document.getElementById('cd-cta-text').innerHTML = '<strong>Starter-plan churn accounts for ' + starterShare +
+          '% of this week\'s increase</strong>, about ' + Math.round(extra) + ' more cancellations than a typical week. Three actions are recommended.';
+
+        // How the overall rate is calculated: total cancellations ÷ total starting accounts × 100.
+        var overallExact = pct(totalNow, TOTAL_ACCOUNTS);
+        document.getElementById('cd-calc-body').innerHTML =
+          '<div class="equation" role="img" aria-label="' + totalNow + ' cancelled accounts divided by ' + TOTAL_ACCOUNTS.toLocaleString('en-US') +
+          ' starting accounts times 100 equals ' + overallExact.toFixed(2) + '%, shown as ' + round1(overallExact) + '%">' +
+          '<span class="eq-term"><span class="eq-num">' + totalNow + '</span><span class="eq-label">Total cancelled accounts</span></span>' +
+          '<span class="eq-op" aria-hidden="true">÷</span>' +
+          '<span class="eq-term"><span class="eq-num">' + TOTAL_ACCOUNTS.toLocaleString('en-US') + '</span><span class="eq-label">Total starting accounts</span></span>' +
+          '<span class="eq-op" aria-hidden="true">× 100 =</span>' +
+          '<span class="eq-term eq-result"><span class="eq-num">' + overallExact.toFixed(2) + '%</span><span class="eq-label">Overall churn rate, shown as ' + round1(overallExact) + '%</span></span></div>' +
+          '<div class="table-wrap"><table class="data-table calc-table"><thead><tr><th scope="col">Plan</th><th scope="col">Starting accounts</th>' +
+          '<th scope="col">Cancelled accounts</th><th scope="col">Plan churn rate</th></tr></thead><tbody>' +
+          planStats.map(function (st) {
+            return '<tr><th scope="row"><span class="swatch" style="background:' + st.plan.color + '"></span>' + st.plan.name + '</th><td>' +
+              st.plan.accounts.toLocaleString('en-US') + '</td><td>' + st.now + '</td><td>' + pct(st.now, st.plan.accounts).toFixed(2) + '%</td></tr>';
+          }).join('') +
+          '</tbody><tfoot><tr><th scope="row">Total</th><td>' + TOTAL_ACCOUNTS.toLocaleString('en-US') + '</td><td>' + totalNow + '</td><td>' +
+          overallExact.toFixed(2) + '% → ' + round1(overallExact) + '%</td></tr></tfoot></table></div>' +
+          '<p class="calc-note">Starting accounts are each plan\'s active accounts at the start of the week. This synthetic dataset has one count per plan (' +
+          PLANS.map(function (p) { return p.accounts; }).join(', ') + ') that applies to every week; it doesn\'t track week-by-week starting counts.</p>';
+
+        // Each plan's contribution in percentage points: plan cancellations ÷ ALL starting accounts × 100.
+        var contribs = planStats.map(function (st) { return { st: st, pts: pct(st.now, TOTAL_ACCOUNTS) }; });
+        // Rounded-rectangle donut: the total sits in the middle, plan labels sit underneath.
+        donutContribs = contribs;
+        donutTotal = overallExact;
+        document.getElementById('cd-contrib').innerHTML =
+          '<div class="donut-wrap"><svg class="donut" id="cd-donut" role="img" aria-label="Contribution to overall churn: ' +
+          contribs.map(function (c) { return c.st.plan.name + ' ' + c.pts.toFixed(2) + ' percentage points'; }).join(', ') +
+          ', total ' + overallExact.toFixed(2) + '%, about ' + round1(overallExact) + '% rounded"></svg>' +
+          '<div class="donut-center" aria-hidden="true"><span class="donut-label">Total account churn</span>' +
+          '<span class="donut-value">' + overallExact.toFixed(2) + '%</span><span class="donut-sub">≈ ' + round1(overallExact) + '% rounded</span></div></div>' +
+          '<div class="contrib-labels">' + contribs.map(function (c) {
+            return '<span class="contrib-label"><span class="contrib-name"><span class="swatch" style="background:' + c.st.plan.color + '"></span>' +
+              c.st.plan.name + ':</span> <strong>' + c.pts.toFixed(2) + '% pts</strong></span>';
+          }).join('') + '</div>';
+        renderDonut();
+        document.getElementById('cd-contrib-legend').innerHTML =
+          '<span class="calc-note" style="display:block">% pts = percentage points. Each plan\'s contribution adds up to the overall churn rate. ' +
+          'A contribution is a plan\'s cancellations ÷ all ' + TOTAL_ACCOUNTS.toLocaleString('en-US') + ' starting accounts, not the plan\'s own churn rate ' +
+          '(Starter\'s own rate is ' + round1(starter.rateNow) + '% of its ' + starter.plan.accounts + ' accounts).</span>';
+
+        // Shared illustrative thresholds: churn rates use health(); changes are rated by direction (any rise is worse).
+        function changePts(now, typical) { return Number(round1(now)) - Number(round1(typical)); }
+        function changeHealth(pts) { return pts > 0.5 ? 'Needs attention' : pts >= 0.2 ? 'Caution' : 'Healthy'; }
+        function tone(status) { return status === 'Healthy' ? 'good' : status === 'Caution' ? 'caution' : 'bad'; }
+        function badge(status) { return '<span class="health ' + tone(status) + '"><span class="dot" aria-hidden="true"></span>' + status + '</span>'; }
+        function rateCell(rate) {
+          var status = health(Number(round1(rate)));
+          return '<td class="st-' + tone(status) + '">' + round1(rate) + '%<span class="visually-hidden"> (' + status + ')</span></td>';
+        }
+        function changeCell(pts) {
+          var status = changeHealth(pts), arrow = pts > 0 ? ' ▲' : pts < 0 ? ' ▼' : ' –';
+          return '<td class="st-' + tone(status) + '">' + signed(pts, 1) + ' pts<span aria-hidden="true">' + arrow + '</span>' +
+            '<span class="visually-hidden"> (' + (pts > 0 ? 'rising, ' : pts < 0 ? 'falling, ' : 'flat, ') + status + ')</span></td>';
+        }
+
+        document.getElementById('cd-bars').innerHTML = planStats.slice().sort(function (a, b) { return b.rateNow - a.rateNow; }).map(function (st) {
+          var p = st.plan, status = health(Number(round1(st.rateNow)));
+          return '<div class="bar-row"><span class="bar-name"><span class="swatch" style="background:' + p.color + '"></span>' + p.name + '</span>' +
+            '<div class="bar-track" role="img" aria-label="' + p.name + ': ' + round1(st.rateNow) + '% this week, typical ' + round1(st.rateTypical) + '%, ' + status + '">' +
+            '<span class="bar-fill" style="width:' + (st.rateNow / 8 * 100) + '%;background:' + p.color + '"></span>' +
+            '<span class="bar-typical" style="left:' + (st.rateTypical / 8 * 100) + '%"></span></div>' + badge(status) +
+            '<span class="bar-value">' + round1(st.rateNow) + '% this week · typical ' + round1(st.rateTypical) + '% · ' +
+            signed(changePts(st.rateNow, st.rateTypical), 1) + ' pts</span></div>';
+        }).join('');
+
+        // Plain-language conclusion: the plan contributing the most to overall churn.
+        var worst = contribs.slice().sort(function (a, b) { return b.pts - a.pts; })[0];
+        var others = planStats.filter(function (st) { return st !== worst.st; });
+        var othersSteady = others.every(function (st) { return changeHealth(changePts(st.rateNow, st.rateTypical)) === 'Healthy'; });
+        document.getElementById('cd-break-conclusion').innerHTML = '<strong>' + worst.st.plan.name + ' contributes the most to overall churn:</strong> ' +
+          worst.pts.toFixed(2) + ' of the ' + overallExact.toFixed(2) + ' points (' + worst.st.now + ' of ' + totalNow + ' cancellations). ' +
+          'Its own churn rate is ' + round1(worst.st.rateNow) + '% vs a typical ' + round1(worst.st.rateTypical) + '% (' +
+          signed(changePts(worst.st.rateNow, worst.st.rateTypical), 1) + ' pts), and it accounts for ' + shareOf(worst.st) + '% of this week\'s increase. ' +
+          others.map(function (st) { return st.plan.name; }).join(' and ') + (othersSteady ? ' are close to their typical weeks.' : ' also changed; see the table below.');
+
+        function shareOf(st) { return Math.round((st.now - st.typical) / extra * 100); }
+        var totalRateNow = pct(totalNow, TOTAL_ACCOUNTS), totalRateTypical = pct(totalTypical, TOTAL_ACCOUNTS);
+        document.getElementById('cd-table').innerHTML =
+          '<caption class="muted small" style="text-align:left;caption-side:top;padding-bottom:6px">Synthetic data. Typical = average of the 4 weeks before this one. Colors and status use the illustrative thresholds above.</caption>' +
+          '<thead><tr><th scope="col">Plan</th><th scope="col">Accounts</th><th scope="col">Cancellations</th><th scope="col">Typical</th>' +
+          '<th scope="col">Churn</th><th scope="col">Typical</th><th scope="col">Change</th><th scope="col">Status</th><th scope="col">Share of increase</th></tr></thead><tbody>' +
+          planStats.map(function (st, i) {
+            return '<tr' + (i === 0 ? ' class="highlight"' : '') + '><th scope="row"><span class="swatch" style="background:' + st.plan.color + '"></span>' + st.plan.name + '</th>' +
+              '<td>' + st.plan.accounts.toLocaleString('en-US') + '</td><td>' + st.now + '</td><td>' + Math.round(st.typical) + '</td>' +
+              rateCell(st.rateNow) + rateCell(st.rateTypical) + changeCell(changePts(st.rateNow, st.rateTypical)) +
+              '<td>' + badge(health(Number(round1(st.rateNow)))) + '</td>' +
+              '<td>' + signed(shareOf(st), 0).replace('+', '') + '%</td></tr>';
+          }).join('') +
+          '</tbody><tfoot><tr><th scope="row">All plans</th><td>' + TOTAL_ACCOUNTS.toLocaleString('en-US') + '</td><td>' + totalNow + '</td><td>' + Math.round(totalTypical) + '</td>' +
+          rateCell(totalRateNow) + rateCell(totalRateTypical) + changeCell(changePts(totalRateNow, totalRateTypical)) +
+          '<td>' + badge(health(Number(round1(totalRateNow)))) + '</td><td>100%</td></tr></tfoot>';
+      }
+
+      // ---------- Churn Detail: loading, empty and error states for the plan breakdown ----------
+      // The breakdown is fetched for the selected period. This prototype simulates the fetch.
+      // Demo the states by adding ?demo=slow, ?demo=empty or ?demo=error to the page address (before the #).
+      //   slow:  the loading skeleton stays up for 5 seconds
+      //   empty: the 5-week period returns no data; 12 and 26 weeks load normally
+      //   error: the first fetch fails; "Try again" then succeeds
+      var DEMO = new URLSearchParams(location.search).get('demo');
+      var EMPTY_MESSAGE = 'No churn data is available for this period. Try selecting a different date range.';
+      var ERROR_MESSAGE = 'We couldn\'t load the churn data. Please try again. Your dashboard data has not been changed.';
+      var breakPanel = document.getElementById('cd-break-panel');
+      var breakState = document.getElementById('cd-break-state');
+      var breakBody = document.getElementById('cd-break-body');
+      var cta = document.getElementById('cd-cta');
+      var fetchCount = 0, requestId = 0;
+
+      function fetchBreakdown(weeks) {
+        fetchCount += 1;
+        var attempt = fetchCount;
+        return new Promise(function (resolve, reject) {
+          setTimeout(function () {
+            if (DEMO === 'error' && attempt === 1) reject(new Error('Simulated fetch failure'));
+            else if (DEMO === 'empty' && weeks === 5) resolve([]);
+            else resolve(PLANS);
+          }, DEMO === 'slow' ? 5000 : 600);
+        });
+      }
+
+      function skeletonHTML() {
+        var headers = ['Plan', 'Accounts', 'Cancellations', 'Typical', 'Churn', 'Typical', 'Change', 'Status', 'Share of increase'];
+        var cell = '<td><span class="sk sk-cell"></span></td>';
+        return '<p class="visually-hidden">Loading churn breakdown by plan.</p>' +
+          '<div aria-hidden="true"><div class="bars" style="margin-top:6px">' +
+          ['Starter', 'Pro', 'Enterprise'].map(function () {
+            return '<div class="bar-row"><span class="sk sk-text" style="width:70px"></span><span class="sk sk-bar"></span><span class="sk sk-text" style="width:90px"></span>' +
+              '<span class="sk sk-text" style="grid-column:2;width:60%"></span></div>';
+          }).join('') + '</div>' +
+          '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+          headers.map(function (h) { return '<th scope="col">' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+          ['Starter', 'Pro', 'Enterprise'].map(function (name) {
+            return '<tr><th scope="row">' + name + '</th>' + cell + cell + cell + cell + cell + cell + cell + cell + '</tr>';
+          }).join('') + '</tbody></table></div></div>';
+      }
+
+      function setBreakdownState(state) {
+        breakPanel.setAttribute('aria-busy', state === 'loading' ? 'true' : 'false');
+        breakBody.hidden = state !== 'ready';
+        cta.hidden = state !== 'ready';
+        document.getElementById('cd-calc').hidden = state !== 'ready';
+        var wasReady = breakdownReady;
+        breakdownReady = state === 'ready';
+        if (wasReady !== breakdownReady && !document.getElementById('screen-churn').hidden) renderMain(currentWeeks);
+        var cancels = document.getElementById('cd-cancels'), cancelsSub = document.getElementById('cd-cancels-sub');
+        if (state === 'loading') {
+          breakState.innerHTML = skeletonHTML();
+          cancels.innerHTML = '<span class="sk sk-kpi" aria-hidden="true"></span><span class="visually-hidden">Loading</span>';
+          cancelsSub.innerHTML = '<span class="sk sk-kpi-sub" aria-hidden="true"></span>';
+        } else if (state === 'empty') {
+          breakState.innerHTML = '<div class="state-msg" role="status"><p>' + EMPTY_MESSAGE + '</p></div>';
+          cancels.textContent = '—';
+          cancelsSub.textContent = '';
+        } else if (state === 'error') {
+          breakState.innerHTML = '<div class="state-msg error" role="alert"><p>' + esc(ERROR_MESSAGE) + '</p>' +
+            '<button type="button" class="btn secondary" id="cd-retry">Try again</button></div>';
+          cancels.textContent = '—';
+          cancelsSub.textContent = '';
+          document.getElementById('cd-retry').addEventListener('click', function () { loadBreakdown(currentWeeks); });
+        } else {
+          breakState.innerHTML = '';
+          renderBreakdown();
+        }
+      }
+
+      function loadBreakdown(weeks) {
+        var id = ++requestId;
+        setBreakdownState('loading');
+        fetchBreakdown(weeks).then(function (plans) {
+          if (id !== requestId) return;
+          setBreakdownState(plans.length ? 'ready' : 'empty');
+        }, function () {
+          if (id !== requestId) return;
+          setBreakdownState('error');
+        });
+      }
+
+      // ---------- Recommended Actions ----------
+      function prioIcon(p) {
+        if (p === 'Urgent') return '<span class="prio-urgent" aria-hidden="true">!</span>';
+        var on = p === 'High' ? 3 : p === 'Medium' ? 2 : 1;
+        return '<span class="prio-icon" aria-hidden="true">' + [5, 8, 11].map(function (h, i) {
+          return '<i class="' + (i < on ? 'on' : '') + '" style="height:' + h + 'px"></i>';
+        }).join('') + '</span>';
+      }
+      function findAction(id) { return ACTIONS.filter(function (a) { return a.id === id; })[0]; }
+      function actionLink(id) {
+        var a = findAction(id);
+        return '<a href="#/actions/' + id + '" title="' + esc(a.title) + '">' + id + '</a><span class="muted prop-trunc">' + esc(a.title) + '</span>';
+      }
+
+      document.getElementById('ac-count').textContent = ACTIONS.length;
+      var list = document.getElementById('ac-list');
+      list.innerHTML = ACTIONS.map(function (a) {
+        return '<li><a class="issue-row" href="#/actions/' + a.id + '" data-id="' + a.id + '" title="' + esc(a.title) + '">' +
+          '<span class="status-icon" aria-hidden="true"></span><span class="issue-id">' + a.id + '</span>' +
+          '<span class="issue-title">' + esc(a.title) + '</span>' +
+          '<span class="row-prio" title="' + a.priority + ' priority">' + prioIcon(a.priority) + '</span>' +
+          '<span class="avatar" aria-hidden="true">' + a.initials + '</span>' +
+          '<span class="visually-hidden" style="position:absolute;left:-9999px">Proposed, ' + a.priority + ' priority, owner ' + esc(a.owner) + ' (example)</span></a></li>';
+      }).join('');
+
+      function renderAction(id) {
+        var a = findAction(id) || ACTIONS[0];
+        list.querySelectorAll('.issue-row').forEach(function (r) {
+          if (r.dataset.id === a.id) r.setAttribute('aria-current', 'true'); else r.removeAttribute('aria-current');
+        });
+        var head =
+          '<div class="issue-meta"><span>' + a.id + '</span>' + (a.primary ? '<span class="primary-tag">Primary recommended action</span>' : '') + '</div>' +
+          '<h2 id="ac-detail-title" tabindex="-1">' + esc(a.title) + '</h2>' +
+          '<p class="issue-desc">' + esc(a.desc) + '</p>';
+        // The primary action is shown as a card with its owner, timeline and success measure up front.
+        var top = a.primary
+          ? '<section class="primary-card" aria-labelledby="ac-detail-title">' + head +
+            '<dl class="key-details">' +
+            '<div class="key-detail"><dt>Owner</dt><dd><span class="avatar" aria-hidden="true">' + a.initials + '</span>' + esc(a.owner) + '</dd></div>' +
+            '<div class="key-detail"><dt>Timeline</dt><dd>' + esc(a.timing) + '</dd></div>' +
+            '<div class="key-detail measure"><dt>Success measure</dt><dd>' + esc(a.measure) + '</dd></div>' +
+            '</dl>' +
+            '<p class="key-note"><span class="illustrative">Illustrative</span> Owner and timeline are examples, not a real assignment or deadline.</p>' +
+            '</section>'
+          : head;
+        document.getElementById('ac-detail').innerHTML = top +
+          '<div class="issue-section"><h3>Why</h3><p>' + esc(a.why) + ' <a class="detail-link" style="margin-top:0;font-size:14px" href="#/churn">See churn detail →</a></p></div>' +
+          (a.primary ? '' : '<div class="issue-section"><h3>How we\'ll measure it</h3><p>' + esc(a.measure) + '</p></div>') +
+          (a.caveat ? '<p class="issue-caveat">Outreach hasn\'t been shown to reduce churn here. Treat this as a test and judge it by the measures above.</p>' : '') +
+          '<div class="issue-section"><h3>Steps <span class="illustrative">Illustrative</span></h3><ul class="steps">' +
+          a.steps.map(function (st) { return '<li><span class="status-icon" aria-hidden="true"></span>' + esc(st) + '</li>'; }).join('') + '</ul></div>' +
+          '<div class="issue-section"><h3>Activity <span class="illustrative">Illustrative</span></h3><ul class="activity">' +
+          '<li>Suggested by Signal from the Starter-plan churn increase</li>' +
+          '<li>Linked to metric: Account churn rate</li>' +
+          '<li>Owner shown as an example role, not a real assignment</li></ul></div>';
+        document.getElementById('ac-props').innerHTML =
+          '<h3>Properties <span class="illustrative">Illustrative</span></h3>' +
+          '<div class="prop"><span class="prop-label">Status</span><span class="prop-value"><span class="status-icon" aria-hidden="true"></span>Proposed</span></div>' +
+          '<div class="prop"><span class="prop-label">Priority</span><span class="prop-value prio">' + prioIcon(a.priority) + a.priority + '</span></div>' +
+          '<div class="prop"><span class="prop-label">Owner</span><span class="prop-value"><span class="avatar" aria-hidden="true">' + a.initials + '</span>' + esc(a.owner) + ' <span class="muted">(example)</span></span></div>' +
+          '<div class="prop"><span class="prop-label">Timing</span><span class="prop-value">' + esc(a.timing) + '</span></div>' +
+          '<div class="prop"><span class="prop-label">Labels</span><span class="prop-value">' + a.labels.map(function (l) { return '<span class="label-chip">' + esc(l) + '</span>'; }).join('') + '</span></div>' +
+          '<div class="prop"><span class="prop-label">Linked metric</span><span class="prop-value"><a href="#/churn">Account churn rate</a></span></div>' +
+          (a.dependsOn ? '<div class="prop"><span class="prop-label">Depends on</span><span class="prop-value nowrap">' + actionLink(a.dependsOn) + '</span></div>' : '') +
+          (a.blocks ? '<div class="prop"><span class="prop-label">Leads to</span><span class="prop-value nowrap">' + actionLink(a.blocks) + '</span></div>' : '');
+        return a;
+      }
+
+      // ---------- Navigation ----------
+      var SCREENS = { overview: 'screen-overview', churn: 'screen-churn', actions: 'screen-actions' };
+      var currentScreen = null;
+      function route() {
+        var m = /^#\/(overview|churn|actions)(?:\/(SIG-\d+))?$/.exec(location.hash);
+        var name = m ? m[1] : 'overview';
+        var changedScreen = name !== currentScreen;
+        Object.keys(SCREENS).forEach(function (k) { document.getElementById(SCREENS[k]).hidden = k !== name; });
+        document.querySelectorAll('.nav-link').forEach(function (l) {
+          if (l.dataset.screen === name) l.setAttribute('aria-current', 'page'); else l.removeAttribute('aria-current');
+        });
+        if (changedScreen) {
+          var shown = document.getElementById(SCREENS[name]);
+          shown.classList.remove('screen-enter');
+          void shown.offsetWidth;
+          shown.classList.add('screen-enter');
+        }
+        if (name === 'actions') renderAction(m && m[2] && findAction(m[2]) ? m[2] : 'SIG-1');
+        if (name === 'churn') renderMain(currentWeeks);
+        if (name === 'churn' && changedScreen) loadBreakdown(currentWeeks);
+        var firstLoad = currentScreen === null;
+        currentScreen = name;
+        if (firstLoad && name === 'overview') return;
+        if (changedScreen) {
+          window.scrollTo(0, 0);
+          var h = name === 'churn' ? 'cd-title' : name === 'actions' ? 'ac-title' : 'ov-title';
+          if (h) document.getElementById(h).focus({ preventScroll: true });
+        } else if (name === 'actions') {
+          document.getElementById('ac-detail-title').focus({ preventScroll: true });
+        }
+      }
+      window.addEventListener('hashchange', route);
+      window.addEventListener('popstate', route);
+      // Screen links use history.pushState instead of a plain #link, because some previews load the
+      // page as a data: URL, where #link navigation is silently blocked.
+      document.addEventListener('click', function (evt) {
+        var link = evt.target.closest('a[href^="#/"]');
+        if (!link || evt.defaultPrevented || evt.button !== 0 || evt.metaKey || evt.ctrlKey || evt.shiftKey || evt.altKey) return;
+        evt.preventDefault();
+        var target = link.getAttribute('href');
+        if (target === location.hash) return;
+        try { history.pushState(null, '', target); } catch (e) { location.hash = target; return; }
+        route();
+      });
+      var resizeTimer;
+      window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () { if (currentScreen === 'churn') { renderMain(currentWeeks); renderDonut(); } }, 150);
+      });
+      route();
+    })();
+  </script>
+</body>
+</html>
