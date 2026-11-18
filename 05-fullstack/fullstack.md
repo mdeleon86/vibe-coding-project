@@ -6,14 +6,14 @@
 
 _The working, shareable link that survives real users._
 
-_____
+https://mdeleon86.github.io/vibe-coding-project/
 
 ## Data schema
 
 | Entity | Key fields | Notes |
 |---|---|---|
-| Signal dashboard data | Plans, weekly churn counts, supporting metrics, recommended actions, action steps, dependencies | 9 shared Supabase tables and 2 reporting views; synthetic churn data. |
-| profiles | user_id (UUID), email, created_at | Linked to Supabase Auth; automatically created at signup. RLS restricts each user to their own profile. |
+| Signal dashboard tables | plans; weekly_plan_counts; weekly_overall_churn; supporting_metrics; supporting_metric_values; health_thresholds; recommended_actions; action_steps; action_dependencies | Nine related Supabase tables store synthetic dashboard data. Two reporting views, weekly_churn and weekly_plan_churn, calculate churn metrics from stored data. Shared read access for authenticated users. |
+| Nine related Supabase tables store synthetic dashboard data. Two reporting views, weekly_churn and weekly_plan_churn, calculate churn metrics from stored data. Shared read access for authenticated users. | user_id (UUID), email, created_at | Linked to Supabase Auth; automatically created at signup. Row-Level Security restricts each user to their own profile. |
 
 ## Access rules
 
@@ -33,4 +33,10 @@ Users must sign up or log in through Supabase Auth. Anonymous users cannot acces
 
 _What you threw at it, and what held / broke._
 
-_____
+Kill Switch / Offline: PASS. With Chrome DevTools set to Offline, Signal displayed an inline error with Retry rather than freezing. Normal operation was restored afterward.
+
+Network failure handling: Claude reported passing simulated tests for startup, authentication, data loading, timeouts, and retry behavior. These automated results were not independently verified.
+
+Ghost User: BLOCKED. New-account signup returned 'Too many attempts. Wait a minute and try again,' including after waiting and refreshing. Existing-account login worked.
+
+Decision: Proceed with the known signup rate-limit blocker documented. New-user onboarding remains unverified and requires follow-up.
