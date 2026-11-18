@@ -1,0 +1,199 @@
+/* 1. Base: the original V2 styles (the dark theme in 5-theme-dark.css restyles most of them) */
+/* Moved unchanged from Signal V4 (03-chaining/v4/index.html, lines 9-204). Load order matters: see index.html. */
+
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #4338ca;
+  --accent-soft: #eef0ff;
+
+  /* Health colors: dark tone for text/marks, soft tone for backgrounds */
+  --good: #15803d;
+  --good-soft: #dcfce7;
+  --caution: #b45309;
+  --caution-soft: #fef3c7;
+  --bad: #b91c1c;
+  --bad-soft: #fee2e2;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.logo { width: 14px; height: 14px; border-radius: 4px; background: var(--accent); }
+.week { color: var(--muted); font-size: 14px; }
+
+main.wide { max-width: 1120px; }
+main { max-width: 880px; margin: 0 auto; padding: 32px 16px 16px; display: grid; gap: 28px; }
+
+.label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Health badges */
+.health {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.health .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.health.good { color: var(--good); background: var(--good-soft); }
+.health.caution { color: var(--caution); background: var(--caution-soft); }
+.health.bad { color: var(--bad); background: var(--bad-soft); }
+
+/* Most important insight */
+.insight {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 5px solid var(--bad);
+  border-radius: 16px;
+  padding: 28px;
+  display: grid;
+  gap: 20px;
+}
+.headline-btn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.headline-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 6px; }
+.headline-btn:hover .drill-hint { text-decoration: underline; }
+.drill-hint { display: inline-block; margin-top: 6px; font-size: 14px; font-weight: 600; color: var(--accent); }
+.drill-hint:empty { display: none; }
+.metric-name { display: block; margin: 0; font-size: 18px; font-weight: 600; }
+.value-row { display: flex; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
+.value { margin: 0; font-size: 72px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; }
+.change { margin: 0; font-size: 22px; font-weight: 700; }
+.change.bad { color: var(--bad); }
+.vs { font-size: 15px; font-weight: 400; color: var(--muted); }
+.value-row .health { align-self: center; }
+.takeaway { margin: 12px 0 0; font-size: 19px; line-height: 1.45; max-width: 52ch; }
+
+/* Churn trend chart */
+.trend { margin: 0; }
+.trend-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 16px; max-width: 480px; margin-bottom: 6px; }
+.trend-title { font-size: 14px; font-weight: 600; color: var(--muted); }
+.synthetic { display: inline-block; padding: 0 6px; border: 1px dashed #9ca3af; border-radius: 4px; font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.range { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.range button { padding: 4px 10px; border: 0; border-left: 1px solid var(--border); background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.range button:first-child { border-left: 0; }
+.range button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.range button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.trend-summary { margin: 0 0 6px; font-size: 14px; max-width: 62ch; }
+.trend-summary:empty { display: none; }
+.readout { margin: 4px 0 0; font-size: 13px; font-weight: 600; color: var(--text); min-height: 1.5em; }
+.trend-chart { display: block; width: 100%; max-width: 480px; height: auto; overflow: visible; }
+.trend-chart text { font-family: inherit; font-size: 11px; fill: var(--muted); }
+.trend-chart .zone-good { fill: var(--good-soft); opacity: 0.6; }
+.trend-chart .zone-caution { fill: var(--caution-soft); opacity: 0.8; }
+.trend-chart .zone-bad { fill: var(--bad-soft); opacity: 0.6; }
+.trend-chart .zone-labels text { font-size: 10.5px; font-weight: 600; }
+.trend-chart .zone-labels .good { fill: var(--good); }
+.trend-chart .zone-labels .caution { fill: var(--caution); }
+.trend-chart .zone-labels .bad { fill: var(--bad); }
+.trend-chart .grid line { stroke: #ffffff; stroke-opacity: 0.7; stroke-width: 1; }
+.trend-chart .benchmark { stroke: #6b7280; stroke-width: 1.5; stroke-dasharray: 4 4; }
+.trend-chart .benchmark-label { font-size: 11px; font-weight: 600; }
+.trend-chart .trend-line { fill: none; stroke: #374151; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.trend-chart .points circle { fill: #374151; stroke: var(--surface); stroke-width: 2; }
+.trend-chart .points .now { fill: var(--bad); }
+.trend-chart .points.dense circle { stroke-width: 1; }
+.trend-chart .guide { stroke: #374151; stroke-width: 1; stroke-dasharray: 2 2; }
+.trend-chart .focus { fill: none; stroke: var(--accent); stroke-width: 2; }
+.trend-chart .hit { fill: transparent; cursor: crosshair; }
+.trend-chart .now-label { font-size: 12px; font-weight: 700; fill: var(--text); }
+.trend-note { margin: 8px 0 0; font-size: 13px; color: var(--muted); max-width: 62ch; }
+
+/* Recommended action */
+.action { background: var(--accent-soft); border: 1px solid #c7d2fe; border-radius: 12px; padding: 18px 20px; }
+.action .label { color: var(--accent); }
+.action-text { margin: 6px 0 0; font-size: 20px; font-weight: 700; line-height: 1.35; }
+.plan { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 14px 0 0; font-size: 15px; }
+.plan dt { font-weight: 700; color: var(--accent); }
+.plan dd { margin: 0; }
+.caveat { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #c7d2fe; font-size: 13px; color: var(--muted); font-style: italic; }
+
+/* Supporting metrics panel */
+.supporting { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+.supporting-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.supporting-title { margin: 0; font-size: 17px; font-weight: 700; }
+.supporting-sub { margin: 0; font-size: 14px; color: var(--muted); }
+.supporting-sub .health { margin-left: 4px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.tile { background: #f9fafb; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.tile p { margin: 0; }
+.tile-name { font-size: 14px; color: var(--muted); }
+.tile-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 2px; }
+.tile-head .health { font-size: 12px; padding: 1px 8px; }
+.tile-value { font-size: 22px; font-weight: 700; }
+.tile-change { font-size: 13px; color: var(--muted); }
+.spark { display: block; width: 100%; height: 28px; margin-top: 10px; overflow: visible; }
+.spark polyline { fill: none; stroke: #9ca3af; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.spark .spark-end { stroke: var(--muted); stroke-width: 5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.spark .spark-threshold { stroke: var(--caution); stroke-width: 1.25; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+.tile .tile-trend { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* Glossary and health ratings */
+.explainers { display: grid; gap: 12px; }
+.glossary { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; font-size: 14px; }
+.glossary summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+.glossary dl { margin: 12px 0 0; display: grid; gap: 10px; }
+.glossary dt { font-weight: 700; }
+.glossary dd { margin: 2px 0 0; color: var(--muted); }
+.direction { font-weight: 400; color: var(--muted); }
+.legend { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.legend .health { margin-right: 6px; }
+.ratings-note { margin: 12px 0 0; font-size: 13px; color: var(--muted); font-style: italic; }
+
+footer { text-align: center; color: var(--muted); font-size: 13px; padding: 16px 16px 28px; }
+
+@media (max-width: 700px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  main { padding-top: 20px; }
+  .insight { padding: 20px; }
+  .supporting { padding: 16px; }
+  .value { font-size: 56px; }
+  .plan { grid-template-columns: 1fr; gap: 0; }
+  .plan dd { margin-bottom: 8px; }
+}

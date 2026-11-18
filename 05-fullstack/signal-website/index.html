@@ -1,0 +1,74 @@
+<!doctype html>
+<!-- Signal: the V4 prototype, refactored into folders. Screens and scope follow 04-production/PRD.md. Synthetic data only. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signal V4 · Weekly metrics</title>
+  <!-- Styles load in this order on purpose: later files restyle earlier ones. -->
+  <link rel="stylesheet" href="styles/1-base.css">
+  <link rel="stylesheet" href="styles/2-shared.css">
+  <link rel="stylesheet" href="styles/3-churn-detail.css">
+  <link rel="stylesheet" href="styles/4-recommended-actions.css">
+  <link rel="stylesheet" href="styles/5-theme-dark.css">
+  <link rel="stylesheet" href="styles/6-sign-in.css">
+  <link rel="stylesheet" href="styles/7-states.css">
+</head>
+<body>
+  <div class="app">
+    <div id="sidebar"></div>
+    <div class="content">
+      <div id="screens"></div>
+      <footer>Signal V4 prototype. Demo with synthetic data. No real customer or company data is used.</footer>
+    </div>
+  </div>
+
+  <!-- 0. Settings: Supabase project URL and anon key. Optional: copy config.example.js to config.js. -->
+  <script src="config.js"></script>
+  <!-- Supabase JS library (sign-in sessions), pinned to an exact version. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+
+  <!-- 1. Data: synthetic numbers, thresholds and wording. No display code. -->
+  <script src="data/churn-data.js"></script>
+  <script src="data/supporting-metrics-data.js"></script>
+  <script src="data/thresholds.js"></script>
+  <script src="data/most-important-insight.js"></script>
+  <script src="data/recommended-actions-data.js"></script>
+  <script src="data/messages.js"></script>
+
+  <!-- 2. Logic: formatting, churn math, sign-in and the data fetch. No page markup. -->
+  <script src="logic/format.js"></script>
+  <script src="logic/churn-calculations.js"></script>
+  <script src="logic/network.js"></script>
+  <script src="logic/auth.js"></script>
+  <script src="logic/churn-data-service.js"></script>
+
+  <!-- 3. Components: display only, named after the PRD's screens. -->
+  <script src="components/shared/HealthBadge.js"></script>
+  <script src="components/shared/KpiScale.js"></script>
+  <script src="components/shared/Sidebar.js"></script>
+  <script src="components/shared/SignInScreen.js"></script>
+
+  <script src="components/overview/OverviewKpiCards.js"></script>
+  <script src="components/overview/MostImportantInsight.js"></script>
+  <script src="components/overview/NextStepCards.js"></script>
+  <script src="components/overview/SupportingMetrics.js"></script>
+  <script src="components/overview/MetricExplainers.js"></script>
+  <script src="components/overview/OverviewScreen.js"></script>
+
+  <script src="components/churn-detail/AccountChurnTrendsByPlan.js"></script>
+  <script src="components/churn-detail/ChurnCalculation.js"></script>
+  <script src="components/churn-detail/PlanContributionChart.js"></script>
+  <script src="components/churn-detail/PlanBreakdown.js"></script>
+  <script src="components/churn-detail/ChurnDetailScreen.js"></script>
+
+  <script src="components/recommended-actions/ActionList.js"></script>
+  <script src="components/recommended-actions/PrimaryActionCard.js"></script>
+  <script src="components/recommended-actions/ActionProperties.js"></script>
+  <script src="components/recommended-actions/RecommendedActionsScreen.js"></script>
+
+  <!-- 4. Navigation and start-up. -->
+  <script src="router.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

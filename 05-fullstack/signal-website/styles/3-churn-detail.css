@@ -1,0 +1,81 @@
+/* 3. Churn Detail screen: report layout, chart, breakdown, loading/empty/error states */
+/* Moved unchanged from Signal V4 (03-chaining/v4/index.html, lines 225-302). Load order matters: see index.html. */
+
+/* ---------- V4: Churn Detail (report layout) ---------- */
+/* minmax(0, 1fr) lets wide content (the plan table) scroll inside its panel instead of widening the page */
+#screen-churn, #screen-actions { grid-template-columns: minmax(0, 1fr); }
+#screen-churn { gap: 16px; }
+.report-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.toolbar-note { font-size: 13px; color: var(--muted); }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.kpi { padding: 14px 18px; border-left: 1px solid var(--border); }
+.kpi:first-child { border-left: 0; }
+.kpi-label { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.kpi-value { margin: 4px 0 0; font-size: 26px; font-weight: 700; line-height: 1.15; }
+.kpi-sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.kpi-value.bad { color: var(--bad); }
+.report-chart { display: block; width: 100%; height: auto; }
+.report-chart text { font-family: inherit; font-size: 11px; fill: var(--muted); }
+.report-chart .zone-good { fill: var(--good-soft); opacity: 0.6; }
+.report-chart .zone-caution { fill: var(--caution-soft); opacity: 0.8; }
+.report-chart .zone-bad { fill: var(--bad-soft); opacity: 0.6; }
+.report-chart .zone-labels text { font-size: 10.5px; font-weight: 600; }
+.report-chart .zone-labels .good { fill: var(--good); }
+.report-chart .zone-labels .caution { fill: var(--caution); }
+.report-chart .zone-labels .bad { fill: var(--bad); }
+.report-chart .grid line { stroke: #ffffff; stroke-opacity: 0.8; }
+.report-chart .axis-line { stroke: var(--border); }
+.report-chart .benchmark { stroke: #6b7280; stroke-width: 1.5; stroke-dasharray: 4 4; }
+.report-chart .benchmark-label { font-weight: 600; }
+.report-chart .line { fill: none; stroke: #374151; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.report-chart .pt { fill: #374151; stroke: var(--surface); stroke-width: 1.5; }
+.report-chart .pt.now { fill: var(--bad); stroke-width: 2; }
+.report-chart .now-label { font-size: 12px; font-weight: 700; fill: var(--text); }
+.report-chart .plan-line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.report-chart .plan-label { font-size: 11px; font-weight: 600; }
+.cd-summary { margin: 0 0 8px; font-size: 14px; }
+.breakdown-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.chart-caption { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.bars { display: grid; gap: 14px; margin-top: 4px; }
+.bar-row { display: grid; grid-template-columns: 88px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; font-size: 13px; }
+.bar-row .health { font-size: 12px; padding: 0 8px; }
+.break-conclusion { margin: 0 0 6px; font-size: 15px; line-height: 1.5; }
+.threshold-note { margin: 0 0 14px; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+.data-table td.st-good { color: var(--good); font-weight: 600; }
+.data-table td.st-caution { color: var(--caution); font-weight: 600; }
+.data-table td.st-bad { color: var(--bad); font-weight: 600; }
+.data-table td .health { font-size: 12px; padding: 0 8px; }
+/* Keeps the table's screen-reader-only text inside the scroll box so it can't widen the page on phones */
+.table-wrap { position: relative; }
+.bar-name { font-weight: 600; }
+.bar-track { position: relative; height: 14px; background: var(--surface-2, #f9fafb); border-radius: 4px; }
+.bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+.bar-typical { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #374151; }
+.bar-value { grid-column: 2 / -1; color: var(--muted); font-size: 12px; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; }
+.data-table th, .data-table td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.data-table th:first-child, .data-table td:first-child { text-align: left; }
+.data-table thead th { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.data-table tbody th { font-weight: 600; }
+.data-table tr.highlight { background: var(--bad-soft); }
+.data-table tfoot td, .data-table tfoot th { font-weight: 700; border-bottom: 0; }
+.table-wrap { overflow-x: auto; }
+/* Breakdown loading (skeleton), empty and error states */
+.sk { display: block; border-radius: 6px; background: linear-gradient(90deg, #eceef2 25%, #f6f7f9 37%, #eceef2 63%); background-size: 400% 100%; animation: sk-shimmer 1.4s ease infinite; }
+@keyframes sk-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+.sk-chart { height: 200px; margin-top: 22px; }
+.sk-text { height: 12px; }
+.sk-bar { height: 14px; }
+.sk-cell { height: 12px; width: 44px; margin-left: auto; }
+.sk-kpi { height: 26px; width: 64px; margin-top: 6px; }
+.sk-kpi-sub { height: 12px; width: 120px; margin-top: 8px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.state-msg { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 20px; text-align: center; border: 1px dashed #d1d5db; border-radius: 10px; background: #f9fafb; }
+.state-msg p { margin: 0; max-width: 52ch; font-size: 15px; }
+.state-msg.error { border: 1px solid #fca5a5; background: var(--bad-soft); }
+.state-msg.error p { color: #7f1d1d; }
+.btn.secondary { background: var(--surface); color: var(--accent); }
+.cta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px 20px; background: var(--accent-soft); border: 1px solid #c7d2fe; border-radius: 12px; padding: 16px 20px; }
+.cta p { margin: 0; font-size: 15px; max-width: 62ch; }
