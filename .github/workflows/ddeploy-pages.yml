@@ -1,0 +1,85 @@
+# Publishes Signal (05-fullstack/signal-website/) to GitHub Pages every time main changes.
+# Only that folder is published; 05-fullstack/fullstack.md and the rest of the repository stay off the site.
+#
+# config.js is kept out of Git, so this workflow creates it on GitHub's side, from two repository variables
+# (Settings → Secrets and variables → Actions → Variables):
+#   SUPABASE_URL              the Project URL, e.g. https://abcdefghijkl.supabase.co
+#   SUPABASE_PUBLISHABLE_KEY  the publishable key, starting with sb_publishable_
+# Both are public by design: they end up in the live site, and the database's access rules protect the data.
+# Never use the secret / service_role key here. The workflow refuses anything that isn't a publishable key.
+#
+# If either variable is missing or looks wrong, the workflow stops and nothing is published, so the live site
+# can never quietly fall back to local data.
+#
+# One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+
+name: Deploy Signal to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # also lets you run it by hand from the Actions tab
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; a newer push waits for the running one to finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Copy Signal into the site folder and create config.js
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -eu
+          URL="${SUPABASE_URL%/}"
+          KEY="$SUPABASE_PUBLISHABLE_KEY"
+
+          if ! printf '%s' "$URL" | grep -Eq '^https://[a-z0-9]+\.supabase\.co$'; then
+            echo "::error::Repository variable SUPABASE_URL is missing or isn't a Supabase Project URL (https://<project>.supabase.co)."
+            exit 1
+          fi
+          if ! printf '%s' "$KEY" | grep -Eq '^sb_publishable_[A-Za-z0-9_-]+$'; then
+            echo "::error::Repository variable SUPABASE_PUBLISHABLE_KEY is missing or isn't a publishable key (sb_publishable_...). Never use the secret or service_role key."
+            exit 1
+          fi
+
+          mkdir _site
+          cp -R 05-fullstack/signal-website/. _site/
+          rm -f _site/config.js
+          cat > _site/config.js <<EOF
+          // Created by the GitHub Pages workflow (.github/workflows/deploy-pages.yml). Not stored in Git.
+          var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components: {} };
+          Signal.config = { supabase: { url: '$URL', anonKey: '$KEY' } };
+          EOF
+          echo "Site files:"; ls -R _site | head -n 60
+
+      - name: Set up GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Package the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v4
