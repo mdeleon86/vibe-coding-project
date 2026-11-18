@@ -13,7 +13,7 @@ https://mdeleon86.github.io/vibe-coding-project/
 | Entity | Key fields | Notes |
 |---|---|---|
 | Signal dashboard tables | plans; weekly_plan_counts; weekly_overall_churn; supporting_metrics; supporting_metric_values; health_thresholds; recommended_actions; action_steps; action_dependencies | Nine related Supabase tables store synthetic dashboard data. Two reporting views, weekly_churn and weekly_plan_churn, calculate churn metrics from stored data. Shared read access for authenticated users. |
-| Nine related Supabase tables store synthetic dashboard data. Two reporting views, weekly_churn and weekly_plan_churn, calculate churn metrics from stored data. Shared read access for authenticated users. | user_id (UUID), email, created_at | Linked to Supabase Auth; automatically created at signup. Row-Level Security restricts each user to their own profile. |
+| Profiles | user_id (UUID), email, created_at | Linked to Supabase Auth; automatically created at signup. Row-Level Security restricts each user to their own profile. |
 
 ## Access rules
 
