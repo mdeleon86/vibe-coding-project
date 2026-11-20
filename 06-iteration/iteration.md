@@ -2,13 +2,15 @@
 
 > Module 6 · Evals & Iteration. Read the analytics, run an iteration sprint, present with evidence.
 
-## What the analytics say
+## What the evidence says
 
-_The numbers from real usage. Put the metric that matters on screen._
+_What real usage showed: numbers if your tool has analytics, counted behaviour if it does not. Put the signal that matters on screen._
 
-- **Primary metric:** _____
-- **What moved:** _____
-- **What didn't:** _____
+- **Primary signal:** 2 testers (you and the instructor) successfully created 3 accounts and accessed the dashboard.
+- **What moved:** Both testers reached the dashboard successfully. Neither reported difficulty understanding or navigating it.
+- **What didn't:** We haven't measured engagement, return visits, or whether users completed the dashboard's core task. We also documented a subsequent signup rate-limit error.
+
+_Observed behaviour: reach 1; core action 1; stall point recommendations; explained away The dashboard was too busy and needs to be simplier; own first run 1._
 
 ## Iteration sprint
 
@@ -18,7 +20,7 @@ _The numbers from real usage. Put the metric that matters on screen._
 
 ## Peer feedback
 
-_____
+Make the dashboard simpler
 
 ## The recommendation
 
