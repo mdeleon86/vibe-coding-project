@@ -5,17 +5,16 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
   C.OverviewScreen = {
     headingId: 'ov-title',
     render: function () {
-      var summary = L.planSummary(D.plans);
       return '<main class="wide" id="screen-overview" aria-labelledby="ov-title">' +
         '<header class="hero">' +
           '<p class="eyebrow">SIGNAL · Weekly churn review · Week of ' + D.report.weekLabel + ' <span class="synthetic">Synthetic demo data</span></p>' +
-          '<h1 id="ov-title" tabindex="-1">Customer Churn Intelligence</h1>' +
-          '<p class="subtitle">Identify which customers are leaving, understand what\'s driving churn, and prioritize actions to improve retention.</p>' +
+          '<h1 id="ov-title" tabindex="-1">Executive Overview</h1>' +
+          '<p class="subtitle">A clear view of business health, emerging risks, and strategic priorities.</p>' +
         '</header>' +
-        C.OverviewKpiCards.render(summary) +
+        // The four headline metric cards used to sit here; the insight now leads, directly below the introduction.
         '<div class="ov-grid">' +
           '<div class="ov-main">' + C.MostImportantInsight.render() + C.NextStepCards.render() + '</div>' +
-          C.SupportingMetrics.render() +
+          // The Supporting metrics panel (sign-ups, activation, trial-to-paid, new bookings) used to sit here, on the right.
         '</div>' +
         C.MetricExplainers.render() +
       '</main>';

@@ -107,11 +107,11 @@ main.wide { max-width: 1180px; }
   .ov-kpi > .ov-kpi-value { font-size: 26px; }
   .ov-kpi > .ov-kpi-value + .kpi-sub { grid-column: 1 / -1; }
 }
-.ov-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
-/* The insight card and Supporting metrics share the first row, so their bottoms always line up;
-   the navigation cards sit in the row below, under the insight. */
+.ov-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+/* One column: the insight card, then the navigation cards below it.
+   (The Supporting metrics panel that used to sit on the right has been removed from the Overview.) */
 .ov-main { display: contents; }
-.ov-grid { grid-template-areas: "insight side" "nav ."; align-items: stretch; row-gap: 20px; }
+.ov-grid { grid-template-areas: "insight" "nav"; align-items: stretch; row-gap: 20px; }
 .ov-grid > .ov-main > .insight { grid-area: insight; }
 .ov-grid > .ov-main > .nav-cards { grid-area: nav; }
 .ov-grid > .ov-side { grid-area: side; }
@@ -280,14 +280,28 @@ main.wide { max-width: 1180px; }
 /* Overview insight card: tighter spacing (all widths) and smaller type (wider screens only) */
 #screen-overview .insight { padding: 22px; gap: 12px; align-content: start; }
 #screen-overview .insight .value { color: #FF525F; }
+#screen-overview .insight-headline { margin: 0; font-size: 28px; font-weight: 750; line-height: 1.2; letter-spacing: -0.015em; color: var(--text); }
 #screen-overview .headline-btn { margin-bottom: 10px; }
 #screen-overview .headline .takeaway { display: inline; margin: 0; }
 #screen-overview .headline .detail-link { margin: 0 0 0 6px; white-space: nowrap; }
 #screen-overview .trend-head { max-width: none; }
 #screen-overview .trend-summary { font-size: 13px; margin-bottom: 4px; max-width: none; }
-#screen-overview .trend-chart { max-width: 400px; }
+#screen-overview .trend-chart { max-width: none; }   /* full card width; the drawing widens to fit (MostImportantInsight.js) */
 #screen-overview .trend-note { font-size: 12px; line-height: 1.45; margin-top: 6px; }
 #screen-overview .action { padding: 12px 16px; }
+/* Compact Supporting metrics, inside the insight card above the next action: name + health badge per metric */
+.sm-compact { padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+.sm-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-bottom: 10px; }
+.sm-title { margin: 0; font-size: 15px; font-weight: 700; }
+.sm-summary { margin: 0; font-size: 14px; }
+.sm-count { font-weight: 700; }
+.sm-desc { margin: 0; font-size: 13px; color: var(--muted); }
+.sm-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.sm-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+.sm-name { min-width: 0; }
+.sm-list .health { font-size: 12px; }
+@media (max-width: 1080px) { .sm-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .sm-list { grid-template-columns: minmax(0, 1fr); } }
 #screen-overview .plan { gap: 2px 14px; margin-top: 8px; }
 #screen-overview .caveat { margin-top: 8px; padding-top: 6px; font-size: 12px; }
 @media (min-width: 561px) {
@@ -298,6 +312,7 @@ main.wide { max-width: 1180px; }
 }
 @media (max-width: 480px) {
   #screen-overview .insight { padding: 18px; }
+  #screen-overview .insight-headline { font-size: 22px; }
 }
 
 /* Layout at smaller widths */
@@ -307,7 +322,7 @@ main.wide { max-width: 1180px; }
   .props { border-top: 1px solid var(--border); padding: 18px 24px; }
 }
 @media (max-width: 1080px) {
-  .ov-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "insight" "nav" "side"; }
+  .ov-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "insight" "nav"; }
   .ov-side .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ov-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

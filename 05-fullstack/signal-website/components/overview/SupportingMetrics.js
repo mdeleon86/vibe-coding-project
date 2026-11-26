@@ -29,6 +29,25 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
   }
 
   C.SupportingMetrics = {
+    // Compact version, shown inside the insight card above the recommended next action:
+    // the heading, "x of 4 Healthy", and one row per metric with its health badge. No values or sparklines.
+    // Health comes from the same rule as the tiles (L.supportingHealth), so the two can never disagree.
+    renderCompact: function () {
+      var metrics = D.supportingMetrics;
+      var healthy = metrics.filter(function (m) { return L.supportingHealth(m) === 'Healthy'; }).length;
+      return '<section class="sm-compact" aria-labelledby="rest-label">' +
+        '<div class="sm-head">' +
+          '<h3 class="sm-title" id="rest-label">Supporting metrics</h3>' +
+          '<p class="sm-summary"><span class="sm-count">' + healthy + ' of ' + metrics.length + '</span> ' + C.HealthBadge('Healthy') + '</p>' +
+          (healthy === metrics.length ? '<p class="sm-desc">No unusual changes this week.</p>' : '') +
+        '</div>' +
+        '<ul class="sm-list">' + metrics.map(function (m) {
+          return '<li><span class="sm-name">' + m.longName + '</span>' + C.HealthBadge(L.supportingHealth(m)) + '</li>';
+        }).join('') + '</ul>' +
+      '</section>';
+    },
+
+    // Full panel with tiles and sparklines. Not shown on the Overview at the moment; kept so it can be brought back.
     render: function () {
       var metrics = D.supportingMetrics;
       var healthy = metrics.filter(function (m) { return L.supportingHealth(m) === 'Healthy'; }).length;

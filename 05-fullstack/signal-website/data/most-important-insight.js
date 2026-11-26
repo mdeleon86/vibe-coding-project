@@ -4,6 +4,7 @@
 var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components: {} };
 
 Signal.data.mostImportantInsight = {
+  headline: 'Customer retention is declining',   // the card's main headline, above the metric
   metricName: 'Account churn rate',
   takeaway: 'More accounts are cancelling than usual, and almost all of the increase is coming from Starter-plan customers.',
   action: {

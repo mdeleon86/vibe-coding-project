@@ -34,3 +34,29 @@ Signal.data.actionActivity = [
 
 // The caution shown with outreach actions until outreach is shown to work.
 Signal.data.outreachCaveat = 'Outreach hasn\'t been shown to reduce churn here. Treat this as a test and judge it by the measures above.';
+
+// Wording for the executive Recommended Actions page. Numbers (churn rates, Starter's share of the increase)
+// are calculated from churn-data.js by the components; only the words live here.
+Signal.data.strategy = {
+  subtitle: 'Strategic recommendations to mitigate business risks, improve customer retention, and drive measurable outcomes.',
+  notice: 'Every recommendation, owner, timeline and step on this page is a proposal that shows how the work would be organized. ' +
+    'None of it is a real assignment, deadline or result yet. Metric values come from synthetic demo data.',
+  primary: {
+    label: 'Primary Strategic Recommendation',
+    headline: 'Improve Starter-plan customer retention',
+    description: 'Initiate targeted outreach to customers most at risk of cancellation.',
+    priority: 'High',
+    owner: 'Customer Success',
+    timeline: 'This week',
+    outcome: 'Reduce customer losses and stabilize Starter-plan retention.',
+    validation: 'Not yet validated: this outreach hasn\'t been shown to reduce churn here. Treat it as a test and judge it by the success measures below.'
+  },
+  // The execution plan, in dependency order. actionId links each step to its detailed action above.
+  plan: [
+    { actionId: 'SIG-2', title: 'Identify at-risk customers', summary: 'Determine which Starter-plan accounts require immediate attention.' },
+    { actionId: 'SIG-1', title: 'Execute targeted retention outreach', summary: 'Prioritize engagement with customers most likely to cancel.' },
+    { actionId: 'SIG-3', title: 'Measure retention outcomes', summary: 'Track outreach effectiveness, customer responses, and subsequent cancellations.' }
+  ],
+  // Desired outcomes are directions, not targets: the prototype has no validated targets.
+  measuresNote: 'Current values are this week\'s figures. Desired outcomes are directions, not targets, and no results from the outreach exist yet.'
+};

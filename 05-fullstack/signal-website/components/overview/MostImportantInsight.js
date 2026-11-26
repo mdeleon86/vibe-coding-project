@@ -5,7 +5,16 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
 (function (C, L, D) {
   var T = D.thresholds.churnRate;
   var DEFAULT_READOUT = 'Point at or tap a week to see its value.';
-  var data = [], step = 0;
+  var data = [], step = 0, shownWeeks = 5, drawnWidth = 0;
+
+  // Chart width. The chart is drawn 340 units wide and used to be shown at most 400px wide, so 1 unit = 400/340 px.
+  // Wider than that, the drawing gets more units across instead of being scaled up: the plot fills the space
+  // while the height and text size stay what they were at 400px.
+  var BASE_W = 340, BASE_PX = 400;
+  function chartWidth(svg) {
+    var px = svg.getBoundingClientRect().width;
+    return px > BASE_PX ? Math.round(px * BASE_W / BASE_PX) : BASE_W;
+  }
 
   // Chart scale: 2.5% at the bottom (y 150) to 5% at the top (y 24).
   function y(v) { return 150 - (v - 2.5) * 50.4; }
@@ -21,9 +30,14 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
   function draw(n) {
     var svg = document.querySelector('#churn-detail .trend-chart');
     var overall = L.overallThisWeek(), typical = L.round1(overall.typical);
+    shownWeeks = n;
+    var W = chartWidth(svg);
+    drawnWidth = Math.round(svg.getBoundingClientRect().width);
+    svg.setAttribute('viewBox', '0 0 ' + W + ' 186');
+    var ZR = W - 10, R = W - 36, ZW = ZR - 34;   // ZR: right edge of the zones; R: this week's x; ZW: zone width
     data = weeks().slice(-n);
     var last = data.length - 1;
-    step = 256 / last;
+    step = (R - 48) / last;
     var every = n <= 5 ? 1 : n <= 12 ? 3 : 5;
     var top = y(5), yBad = y(T.attentionAbove), yCaution = y(T.cautionFrom), bottom = y(2.5);
     function h(a, b) { return Math.round((b - a) * 100) / 100; } // zone height, without floating-point noise
@@ -31,19 +45,19 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
       '<desc id="trend-svg-desc">' + data.map(function (w, i) {
         return 'Week of ' + w.label + (i === last ? ', this week' : '') + ': ' + fmt(w.v) + ', ' + L.churnHealth(w.v);
       }).join('. ') + '. Typical week: ' + typical + '%.</desc>' +
-      '<g class="zones"><rect class="zone-bad" x="34" y="' + top + '" width="296" height="' + h(top, yBad) + '"/>' +
-      '<rect class="zone-caution" x="34" y="' + yBad + '" width="296" height="' + h(yBad, yCaution) + '"/>' +
-      '<rect class="zone-good" x="34" y="' + yCaution + '" width="296" height="' + h(yCaution, bottom) + '"/></g>' +
+      '<g class="zones"><rect class="zone-bad" x="34" y="' + top + '" width="' + ZW + '" height="' + h(top, yBad) + '"/>' +
+      '<rect class="zone-caution" x="34" y="' + yBad + '" width="' + ZW + '" height="' + h(yBad, yCaution) + '"/>' +
+      '<rect class="zone-good" x="34" y="' + yCaution + '" width="' + ZW + '" height="' + h(yCaution, bottom) + '"/></g>' +
       '<g class="zone-labels"><text class="bad" x="38" y="35">Needs attention (above ' + fmt(T.attentionAbove) + ')</text>' +
       '<text class="caution" x="38" y="90.5">Caution (' + T.cautionFrom.toFixed(1) + '–' + fmt(T.attentionAbove) + ')</text>' +
       '<text class="good" x="38" y="146">Healthy (below ' + fmt(T.cautionFrom) + ')</text></g>' +
-      '<g class="grid">' + [3, 4, 5].map(function (t) { return '<line x1="34" x2="330" y1="' + y(t) + '" y2="' + y(t) + '"/>'; }).join('') + '</g>' +
+      '<g class="grid">' + [3, 4, 5].map(function (t) { return '<line x1="34" x2="' + ZR + '" y1="' + y(t) + '" y2="' + y(t) + '"/>'; }).join('') + '</g>' +
       '<g class="axis">' + [3, 4, 5].map(function (t) { return '<text x="28" y="' + (y(t) + 4) + '" text-anchor="end">' + t + '%</text>'; }).join('');
     for (var i = last; i >= 0; i -= every) {
       s += '<text x="' + x(i) + '" y="174" text-anchor="middle">' + data[i].label + '</text>';
     }
-    s += '</g><line class="benchmark" x1="34" x2="330" y1="' + y(Number(typical)) + '" y2="' + y(Number(typical)) + '"/>' +
-      '<text class="benchmark-label" x="330" y="140" text-anchor="end">Typical week: ' + typical + '%</text>' +
+    s += '</g><line class="benchmark" x1="34" x2="' + ZR + '" y1="' + y(Number(typical)) + '" y2="' + y(Number(typical)) + '"/>' +
+      '<text class="benchmark-label" x="' + ZR + '" y="140" text-anchor="end">Typical week: ' + typical + '%</text>' +
       '<line class="guide" x1="0" x2="0" y1="24" y2="150" visibility="hidden"/>' +
       '<polyline class="trend-line" points="' + data.map(function (w, i) { return x(i) + ',' + y(w.v); }).join(' ') + '"/>' +
       '<g class="points' + (n > 12 ? ' dense' : '') + '">';
@@ -53,8 +67,8 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
         : '<circle cx="' + x(i) + '" cy="' + y(w.v) + '" r="' + (n > 12 ? 2.5 : 4) + '"/>';
     });
     s += '</g><circle class="focus" r="7" visibility="hidden"/>' +
-      '<text class="now-label" x="292" y="50" text-anchor="end">' + fmt(data[last].v) + ' this week</text>' +
-      '<rect class="hit" x="34" y="24" width="296" height="150"/>';
+      '<text class="now-label" x="' + (R - 12) + '" y="50" text-anchor="end">' + fmt(data[last].v) + ' this week</text>' +
+      '<rect class="hit" x="34" y="24" width="' + ZW + '" height="150"/>';
     svg.innerHTML = s;
 
     var high = L.previousHigh(n);
@@ -68,8 +82,9 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
     render: function () {
       var I = D.mostImportantInsight, o = L.overallThisWeek();
       var now = L.round1(o.now) + '%', typical = L.round1(o.typical) + '%';
-      return '<section class="insight" aria-labelledby="insight-label">' +
+      return '<section class="insight" aria-labelledby="insight-label insight-headline">' +
         '<p class="label" id="insight-label">Most important insight this week</p>' +
+        '<h2 class="insight-headline" id="insight-headline">' + C.esc(I.headline) + '</h2>' +
         '<div class="headline">' +
           '<button type="button" class="headline-btn" id="churn-toggle" aria-expanded="true" aria-controls="churn-detail">' +
             '<span class="metric-name">' + I.metricName + '</span>' +
@@ -98,6 +113,7 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
             o.changeRelative.toFixed(1) + '%, rounded to the nearest whole percent. In absolute terms, churn is ' + (o.changePts >= 0 ? 'up ' : 'down ') +
             Math.abs(o.changePts).toFixed(1) + ' percentage points. "Typical week" is the average of the four weeks before this one.</p>' +
         '</figure>' +
+        C.SupportingMetrics.renderCompact() +
         '<div class="action">' +
           '<p class="label">Recommended next action</p>' +
           '<p class="action-text">' + C.esc(I.action.text) + '</p>' +
@@ -148,6 +164,13 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
       });
 
       draw(5);
+
+      // Redraw when the chart's width changes (window resized, or the trend shown again after being hidden),
+      // so the plot keeps filling the card. Height changes alone are ignored.
+      if (window.ResizeObserver) new ResizeObserver(function () {
+        var px = Math.round(svg.getBoundingClientRect().width);
+        if (px && px !== drawnWidth) draw(shownWeeks);
+      }).observe(svg);
     }
   };
 })(Signal.components, Signal.logic, Signal.data);

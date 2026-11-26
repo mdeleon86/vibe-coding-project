@@ -22,7 +22,7 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
       void shown.offsetWidth; // restarts the fade-in animation
       shown.classList.add('screen-enter');
     }
-    if (name === 'actions') C.RecommendedActionsScreen.show(m && m[2] && C.RecommendedActionsScreen.has(m[2]) ? m[2] : 'SIG-1');
+    if (name === 'actions') C.RecommendedActionsScreen.show(m && m[2] && C.RecommendedActionsScreen.has(m[2]) ? m[2] : null);
     if (name === 'churn') C.ChurnDetailScreen.show(changedScreen);
     var firstLoad = currentScreen === null;
     currentScreen = name;
@@ -32,7 +32,7 @@ var Signal = window.Signal = window.Signal || { data: {}, logic: {}, components:
       window.scrollTo(0, 0);
       document.getElementById(SCREENS[name].component.headingId).focus({ preventScroll: true });
     } else if (name === 'actions') {
-      document.getElementById('ac-detail-title').focus({ preventScroll: true });
+      C.RecommendedActionsScreen.focusTarget().focus();
     }
   }
 
