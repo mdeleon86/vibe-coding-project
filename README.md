@@ -65,3 +65,6 @@ my-vibe-coding-project/
 └── 06-iteration/
     └── iteration.md                ← M6: analytics + go/iterate/kill recommendation
 ```
+## Live product
+
+**Signal:** https://mdeleon86.github.io/vibe-coding-project/
